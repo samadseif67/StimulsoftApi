@@ -7,7 +7,9 @@ using Stimulsoft.Report.Components;
 using Stimulsoft.Report.Components.TextFormats;
 using Stimulsoft.Report.Dictionary;
 using Stimulsoft.Report.Export;
+using System.ComponentModel.DataAnnotations;
 using System.Drawing;
+using System.Reflection;
 
 [ApiController]
 [Route("api/[controller]/[action]")]
@@ -57,7 +59,7 @@ public class ReportController : ControllerBase
 
         //***********************************************************************************************
 
-        List<string> cloumnSelected = new List<string>() { "Name","Family"};
+        List<string> cloumnSelected = new List<string>() { "Name", "Family" };
 
 
 
@@ -95,9 +97,9 @@ public class ReportController : ControllerBase
         titleLineDataText.Text = "ردیف";
         titleLineDataText.Height = 0.4;
         titleLineDataText.Name = "line1" + nameIndex.ToString();
-        titleLineDataText.Border.Side= StiBorderSides.All;
-        titleLineDataText.HorAlignment=StiTextHorAlignment.Center;
-        titleLineDataText.VertAlignment=StiVertAlignment.Center;
+        titleLineDataText.Border.Side = StiBorderSides.All;
+        titleLineDataText.HorAlignment = StiTextHorAlignment.Center;
+        titleLineDataText.VertAlignment = StiVertAlignment.Center;
         titleLineDataText.CanGrow = true;
         titleLineDataText.GrowToHeight = true;
         titleLineDataText.Font = headFont;
@@ -142,18 +144,18 @@ public class ReportController : ControllerBase
 
         double positionDataText = (page.Width) - 0.5;
 
-        StiText LineDataText=new StiText(new RectangleD(positionDataText,0,columnWidth,0.4));
-        StiNumberFormatService Textformat2=new StiNumberFormatService(3,".",0,",",3,false,false," ");
+        StiText LineDataText = new StiText(new RectangleD(positionDataText, 0, columnWidth, 0.4));
+        StiNumberFormatService Textformat2 = new StiNumberFormatService(3, ".", 0, ",", 3, false, false, " ");
         LineDataText.Width = 0.5;
         LineDataText.Text = "{Line}";
         LineDataText.Name = "DataText" + nameIndex.ToString();
         LineDataText.Border.Side = StiBorderSides.All;
-        LineDataText.HorAlignment=StiTextHorAlignment.Center;
-        LineDataText.VertAlignment=StiVertAlignment.Center;
+        LineDataText.HorAlignment = StiTextHorAlignment.Center;
+        LineDataText.VertAlignment = StiVertAlignment.Center;
         LineDataText.CanGrow = true;
-        LineDataText.GrowToHeight=true;
+        LineDataText.GrowToHeight = true;
         LineDataText.Font = headFont;
-        LineDataText.WordWrap= true;
+        LineDataText.WordWrap = true;
         LineDataText.TextFormat = Textformat2;
         dataBand.Components.Add(LineDataText);
 
@@ -161,8 +163,39 @@ public class ReportController : ControllerBase
         nameIndex++;
 
 
-        var LineTextleft=LineDataText.Left;
+        var LineTextleft = LineDataText.Left;
         double leftDataPosition = LineDataText.Left;
+
+
+        //********************************************************************************
+        Type type = typeof(Student);
+        PropertyInfo[] properties = type.GetProperties();
+        List<ColumnsReport> feildsDataOrginal = new List<ColumnsReport>();
+        List<ColumnsReport> fieldsData = new List<ColumnsReport>();
+
+        for (int i = 0; i < properties.Length; i++)
+        {
+            ColumnsReport row = new ColumnsReport();
+            string value = properties[i].Name;
+            row.Value = value;
+            var attribute = properties[i].GetCustomAttribute(typeof(DisplayAttribute));
+            if(attribute!=null)
+            {
+                var caption = (attribute as DisplayAttribute).Name;
+                row.Caption= caption;
+            }
+
+        }
+
+
+
+
+
+
+
+
+        //*******************************************************************************
+
 
         List<SelectedColumn> SelectedColumns = new List<SelectedColumn>();
         foreach (var item in SelectedColumns)
@@ -172,13 +205,13 @@ public class ReportController : ControllerBase
             var ColumnWidth = (widthColumnPrecent * ColSecond) / 100;
             leftDataPosition = leftDataPosition - ColumnWidth;
 
-            StiText dataText=new StiText();
+            StiText dataText = new StiText();
             dataText.Left = leftDataPosition;
             dataText.Width = ColumnWidth;
             dataText.Height = 0.4;
             StiNumberFormatService Textformat = new StiNumberFormatService(3, ".", 0, ",", 3, false, false, " ");
             dataText.Width = 0.5;
-            dataText.Text = "{"+"dt"+"."+item.Value+"}";
+            dataText.Text = "{" + "dt" + "." + item.Value + "}";
             dataText.Name = "DataText" + nameIndex.ToString();
             dataText.Border.Side = StiBorderSides.All;
             dataText.HorAlignment = StiTextHorAlignment.Center;
@@ -230,7 +263,7 @@ public class ReportController : ControllerBase
 
 
         //***************************************************************************************************
-        
+
         var contentRoot = webHostEnvironment.ContentRootPath;
         var reportFile = System.IO.Path.Combine(contentRoot, "Reports", "ReportExample.mrt");
 
@@ -238,7 +271,7 @@ public class ReportController : ControllerBase
         var lstData = new List<Student>() { new Student() { Name = "علی", Family = "محمدی" }, new Student() { Name = "ناصر", Family = "ناصری" } };
         Report.Save(reportFile);
         Report.RegData("dt", lstData);
-        Report.Render();   
+        Report.Render();
 
         var PdfSettings = new Stimulsoft.Report.Export.StiPdfExportSettings();
         var service = new Stimulsoft.Report.Export.StiPdfExportService();

@@ -161,3 +161,4 @@ E:\project\StimulsoftProject\StimulsoftApi\StimulsoftApi\obj\Debug\net6.0\refint
 E:\project\StimulsoftProject\StimulsoftApi\StimulsoftApi\obj\Debug\net6.0\StimulsoftApi.pdb
 E:\project\StimulsoftProject\StimulsoftApi\StimulsoftApi\obj\Debug\net6.0\StimulsoftApi.genruntimeconfig.cache
 E:\project\StimulsoftProject\StimulsoftApi\StimulsoftApi\obj\Debug\net6.0\ref\StimulsoftApi.dll
+E:\project\StimulsoftProject\StimulsoftApi\StimulsoftApi\obj\Debug\net6.0\StimulsoftApi.sourcelink.json
