@@ -1,0 +1,20 @@
+ public List<M> ExcuteStoreProcedure<M>(string StoredProcedureName, List<myFilter> AddFilters)
+ {
+    
+     string where = " ";
+     string filterRules = "";
+      
+      
+
+     if (AddFilters != null)
+         where = myUtilityStatic.myFilter(filterRules?.ToString(), AddFilters);
+     else
+         where = myUtilityStatic.myFilter(filterRules?.ToString());
+
+     using var connection = new SqlConnection(myUtilityStatic.GetConnectionString());        
+     using (var resultMultiple = connection.QueryMultiple(StoredProcedureName, new { Rows = 300, Page = 1, Where = where, SortName = "id", SortOrder = "", ExportToExcel = false }, commandType:CommandType.StoredProcedure))
+     {
+        var result = resultMultiple.Read<M>().ToList();                             
+        return result;
+     };          
+ }

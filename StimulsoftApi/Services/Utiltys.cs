@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 
@@ -6,6 +7,30 @@ namespace StimulsoftApi.Services
 {
     public class Utiltys
     {
+
+
+        public Type GetIEnumerableType(IEnumerable enumerable)
+        {
+            Type type = enumerable.GetType();
+
+            // Check if the type is a generic type
+            if (type.IsGenericType)
+            {
+                // Check if it implements IEnumerable<T>
+                Type enumerableInterface = type.GetInterface(typeof(IEnumerable<>).Name);
+                if (enumerableInterface != null)
+                {
+                    // Get the type argument T from IEnumerable<T>
+                    Type elementType = enumerableInterface.GetGenericArguments()[0];
+                    Console.WriteLine($"Type is IEnumerable<{elementType.Name}>.");
+                    return elementType;
+                }
+            }
+
+            // If not generic, it's a non-generic IEnumerable
+            Console.WriteLine("Type is non-generic IEnumerable.");
+            return null;
+        }
 
 
         //public virtual myResult Delete(Guid id)

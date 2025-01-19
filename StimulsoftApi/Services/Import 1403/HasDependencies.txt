@@ -1,0 +1,72 @@
+ #region DependenciesInformation
+
+ public myResult HasDependencies<TEntity>(TEntity entity) where TEntity : class
+ {
+
+     myResult ErrorMsg = new myResult();
+     string CollectionControllerActionTitle = "";
+
+     bool HasDependencies = false;//وابستگی ندارد
+     string EntityName = entity.GetType().Name;
+     var Value_ID = typeof(TEntity).GetProperty("ID").GetValue(entity, null);
+
+     var foreignKeys = db.Model.GetEntityTypes()
+ .SelectMany(entity => entity.GetForeignKeys())
+ .Select(fk => new
+ {
+     ForeignKeyName = fk.PrincipalToDependent?.Name ?? "N/A",
+     ParentTableSchema = fk.DeclaringEntityType.GetSchema() ?? "dbo",
+     ParentTable = fk.DeclaringEntityType.GetTableName(),
+     ParentColumn = string.Join(", ", fk.Properties.Select(p => p.Name)),
+     ReferencedTableSchema = fk.PrincipalEntityType.GetSchema() ?? "dbo",
+     ReferencedTable = fk.PrincipalEntityType.GetTableName(),
+     ReferencedColumn = string.Join(", ", fk.PrincipalKey.Properties.Select(p => p.Name))
+ })
+ .ToList().Where(x => x.ReferencedTable == EntityName).ToList();
+
+
+     using (SqlConnection connection = new(myUtilityStatic.GetConnectionString()))
+     {
+
+         List<string> LstParentTable = new List<string>();
+         LstParentTable = foreignKeys.Select(x => x.ParentTable).ToList();
+         var LstControllerActions = db.ControllerActions.Where(x => x.IsDelete == false && x.ActivityID == null 
+         && LstParentTable.Contains(x.ControllerName)).Select(x => new { x.ID, x.ControllerName, x.Title }).ToList();
+
+
+         foreach (var item in foreignKeys)
+         {
+             string ParentTableSchema = item.ParentTableSchema;
+             string ParentTable = item.ParentTable;
+             string ParentColumn = item.ParentColumn;
+             string TableNameFull = ParentTableSchema + "." + ParentTable;
+
+             var TextCmd = "select top(1) ID from " + TableNameFull + " " + "where IsDelete=0 and " + ParentColumn + "='" + Value_ID + "'";
+             SqlCommand command = new SqlCommand(TextCmd, connection);
+             SqlDataAdapter dataAdapter = new SqlDataAdapter(command);
+             DataTable dataTable = new DataTable();
+             dataAdapter.Fill(dataTable);
+             int CountRow = dataTable.Rows.Count;
+             if (CountRow > 0)
+             {
+
+                 var FindControllerActions = LstControllerActions.FirstOrDefault(x => x.ControllerName == ParentTable);
+                 string ControllerActionTitle = FindControllerActions == null ? "" : FindControllerActions.Title;
+                 CollectionControllerActionTitle = CollectionControllerActionTitle.Trim().Length == 0 ? (ControllerActionTitle) : ("," + ControllerActionTitle);
+                 HasDependencies = true;//وابستگی دارد
+
+             }
+         }
+     }
+
+     string ErrorText = "اطلاعات مورد نظر دارای وابستگی می باشد";
+     ErrorText = ErrorText + " (" + CollectionControllerActionTitle + ") ";
+     ErrorMsg.ErrorMessage = HasDependencies ? ErrorText : "";
+     ErrorMsg.ErrorCode = HasDependencies ? 1 : 0;
+
+
+     return ErrorMsg;
+ }
+
+
+ #endregion

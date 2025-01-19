@@ -1,0 +1,55 @@
+   private void RegisterLogSystem()
+   {
+       string actionName = "";
+       string controllerName = "";
+       var httpContextAccessor = new HttpContextAccessor();
+       var HttpContext = httpContextAccessor.HttpContext;
+       if (HttpContext != null)
+       {
+           controllerName = HttpContext.GetRouteData().Values["controller"]?.ToString();
+           actionName = HttpContext.GetRouteData().Values["action"]?.ToString();
+       }
+
+
+       var modifiedEntries = ChangeTracker
+           .Entries()
+           .Where(e => e.State == EntityState.Modified || e.State == EntityState.Added || e.State == EntityState.Deleted);
+
+       foreach (var entry in modifiedEntries)
+       {
+           dataContext ??= new DataContext();
+
+           string EntityName = entry.Entity.GetType().Name;
+
+           if (EntityName != "LogSystem")
+           {
+               var entityType = dataContext.Model.FindEntityType(entry.Entity.GetType());
+               string AreaName = entityType.GetSchema() ?? "dbo";
+               string JsonEntity = myUtilityStatic.ConvertOriginalValuesToJson(entry);
+
+              dynamic Obj= JObject.Parse(JsonEntity);
+               
+               var UserInsertID= Obj.UserInsertID;
+               var UserUpdateID= Obj.UserUpdateID;
+               var DateInsert = Obj.DateInsert;
+               var DateUpdate = Obj.DateUpdate;
+
+               dataContext.LogSystems.Add(new LogSystem()
+               {
+                   ID = Guid.NewGuid(),
+                   AreaName = AreaName,
+                   ControllerName = EntityName,
+                   ActionName = actionName,
+                   Entity = JsonEntity,
+                   IsDelete = false,
+
+                   UserInsertID= UserInsertID,
+                   UserUpdateID= UserUpdateID,
+                   DateInsert= DateInsert,
+                   DateUpdate= DateUpdate,
+
+               });
+               dataContext.SaveChanges();
+           }
+       }
+   }
