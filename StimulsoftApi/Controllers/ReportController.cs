@@ -22,6 +22,20 @@ public class ReportController : ControllerBase
     }
 
 
+    //***************************************************************************
+
+    [HttpGet]
+    [MyValidation]
+    public ActionResult CreateDatey(DateTime from, DateTime to)
+    {
+        return Ok();
+    }
+
+
+    //****************************************************************************
+
+
+
     [HttpGet]
     public ActionResult GenericReporDynamic()
     {

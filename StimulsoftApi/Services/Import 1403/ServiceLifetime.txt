@@ -1,0 +1,13 @@
+
+
+//****************************************************************************************************************
+
+builder.Services.TryAddSingleton<IService, FirstService>();
+builder.Services.TryAddSingleton<IService, SecondService>();
+
+//******************************************************************************************************************
+var firstDescriptor = new ServiceDescriptor(typeof(IService), typeof(FirstService), ServiceLifetime.Singleton);
+var secondDescriptor = new ServiceDescriptor(typeof(IService), typeof(SecondService), ServiceLifetime.Singleton);
+builder.Services.TryAddEnumerable(new [] { firstDescriptor, secondDescriptor });
+
+//*******************************************************************************************************************
