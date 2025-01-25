@@ -1,0 +1,36 @@
+public class MyEntity
+{
+    public MyEntity()
+    {
+        Id = Guid.NewGuid();
+    }
+
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public Guid Id { get; set; }
+}
+
+// در DbContext:
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<MyEntity>()
+        .Property(e => e.Id)
+        .HasDefaultValueSql("NEWID()");
+}
+
+
+//****************************************************************************************
+
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+    {
+        if (typeof(IEntity).IsAssignableFrom(entityType.ClrType))
+        {
+            modelBuilder.Entity(entityType.ClrType)
+                .Property<Guid>("Id")
+                .ValueGeneratedNever()
+                .HasDefaultValueSql("NEWID()");
+        }
+    }
+}
