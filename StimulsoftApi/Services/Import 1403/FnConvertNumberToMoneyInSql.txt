@@ -1,0 +1,10 @@
+ 
+ALTER function [dbo].[FnConvertNumberToMoney](@MyValue bigint=65412)
+--جدا کردن یک عدد بصورت سه رقم 
+returns nvarchar(50)
+as
+begin
+declare @Result nvarchar(50)
+set @Result= replace(convert(varchar,convert(Money, @MyValue),1),'.00','');
+return @Result;
+end

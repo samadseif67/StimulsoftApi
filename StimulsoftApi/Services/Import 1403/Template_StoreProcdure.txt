@@ -1,0 +1,53 @@
+ 
+ 
+ 
+ 
+
+ 
+create PROCEDURE [dbo].[SPExpertiseAreaList] 
+	-- Add the parameters for the stored procedure here
+	@Rows varchar(3),
+	@Page varchar(4) ,
+	@Where nvarchar(250),
+	@SortName nvarchar(250),
+	@SortOrder nvarchar(250),
+	@ExportToExcel bit
+
+AS
+BEGIN
+	if @Rows = '' or @Rows is null
+		set @Rows = '10';
+
+	if @Page = '' or @Page is null
+		set @Page = '1';
+
+	if @Where is null
+		set @Where = '';
+
+	if @SortName = '' or @SortName is null
+		set @SortName = 'Title';
+
+	if @SortOrder = '' or @SortOrder is null
+		set @SortOrder = 'desc';
+
+declare @skip varchar(4) =   ( CONVERT(int,@Rows) *   CONVERT(varchar,@Page)) -   CONVERT(varchar,@Rows)
+
+declare @queryMain nvarchar(max)
+
+set @queryMain ='select * from COC.ExpertiseArea '
+
+declare @query nvarchar(max) ;
+
+
+
+set @query = 'select * from ('+@queryMain+')u ' + @Where + ' order by ' + @SortName + ' ' + @SortOrder + IIF(@ExportToExcel = 1 ,'' ,' OFFSET '+ @skip +' ROWS FETCH NEXT '+ @Rows+' ROWS ONLY')
+exec sp_executesql @query
+
+declare @queryCount nvarchar(max) ;
+
+set @queryCount = 'select count(ID)
+ from ('+@queryMain+')u ' + @Where
+
+exec sp_executesql @queryCount
+
+END

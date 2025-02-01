@@ -1,0 +1,33 @@
+ #region GetCorrectStringWithoutSpaceWithObj
+
+ public List<T> GetCorrectStringWithoutSpaceWithLst<T>(List<T> ObjNew)
+ {
+     List<T> Result = new List<T>();
+     foreach (var x in ObjNew)
+     {
+         var Find = GetCorrectStringWithoutSpaceWithObj(x);
+         Result.Add(Find);
+     }
+     return Result;
+ }
+
+ public T GetCorrectStringWithoutSpaceWithObj<T>(T ObjNew)
+ {
+     foreach (var x in ObjNew.GetType().GetProperties())
+     {
+         var name = x.Name;
+         if (x.PropertyType.Name.ToLower() == "string")
+         {
+             var Value = x.GetValue(ObjNew);
+             x.SetValue(ObjNew, CorrectStringWithoutSpace(Convert.ToString(Value)));
+         }
+     }
+     return ObjNew;
+ }
+
+
+  public string CorrectStringWithoutSpace(string myText)
+  {
+      return myText.Replace('ی', 'ي').Replace('ک', 'ك').Replace("\t", " ");
+  }
+ #endregion GetCorrectStringWithoutSpaceWithObj

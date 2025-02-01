@@ -1,0 +1,30 @@
+sp_configure 'show advanced options', 1;
+GO
+RECONFIGURE;
+GO
+sp_configure 'clr enabled', 1;
+GO
+RECONFIGURE;
+GO
+
+
+//*******************************************************
+USE <DATABASE>;
+EXEC sp_configure 'clr enabled' ,1
+GO
+
+RECONFIGURE
+GO
+EXEC sp_configure 'clr enabled'   -- make sure it took
+GO
+
+USE <DATABASE>
+GO
+
+EXEC sp_changedbowner 'sa'
+USE <DATABASE>
+GO
+
+ALTER DATABASE <DATABASE> SET TRUSTWORTHY ON;  
+
+//****************************************************************

@@ -1,0 +1,22 @@
+  public List<myLocationListTree> myTreeLocationAll()
+  {
+      List<myLocationListTree> myLocationListTrees = new List<myLocationListTree>();
+      var lstLocations = db.Locations.ToList();
+      myLocationListTrees = GetLstTreeLocationList(lstLocations, null);
+      return myLocationListTrees;
+  }
+
+  private List<myLocationListTree> GetLstTreeLocationList(List<Location> list, object parentID)
+  {
+      List<myLocationListTree> myLocationListTrees = new List<myLocationListTree>();
+      myLocationListTrees = list.Where(x => x.ParentID.Equals(parentID)).Select(x => new myLocationListTree
+      {
+          ID = x.ID,
+          ParentID = x.ParentID,
+          Title = x.Title,
+          LevelCode = x.LevelCode,
+          Children = GetLstTreeLocationList(list, x.ID)
+      }).ToList();
+
+      return myLocationListTrees;
+  }

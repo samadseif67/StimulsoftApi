@@ -1,0 +1,48 @@
+ /// <summary>
+ /// نوع اولویت زمانی
+ /// </summary>            
+ [TypeValidation(typeof(Guid), PersionDisplay: "نوع اولویت زمانی")]
+ public Guid? TimePriorityTypeID { get; set; }
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+
+using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Linq;
+using System.ComponentModel.DataAnnotations;
+namespace ViewModel
+{
+    public class TypeValidationAttribute : ValidationAttribute
+    {
+        private readonly Type _ExpectedType;
+        private string _PersionDisplay = "";
+        private string ErrorMsgIsNull="";
+        private string ErrorMsgNotValid = "";
+        public TypeValidationAttribute(Type ExpectedType,string PersionDisplay = "")
+        {
+            _ExpectedType = ExpectedType ?? throw new ArgumentNullException(nameof(ExpectedType));
+            _PersionDisplay = PersionDisplay;
+        }
+         
+
+        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        {
+            
+            if (value == null)
+            {
+                ErrorMsgIsNull = _PersionDisplay +" "+ "را وارد کنید";
+                return new ValidationResult(ErrorMsgIsNull);
+            }
+            if (value.GetType() != _ExpectedType)
+            {
+                ErrorMsgNotValid= _PersionDisplay + " " + "از نوع داده ای درست نمی باشد";
+                return new ValidationResult(ErrorMsgNotValid);
+            }                     
+            return ValidationResult.Success;
+        }
+    }
+}
+
+
+

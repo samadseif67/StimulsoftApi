@@ -1,0 +1,4 @@
+ foreach (var entryType in modelBuilder.Model.GetEntityTypes().Where(t => typeof(IBaseModel).IsAssignableFrom(t.ClrType)))
+ {
+     modelBuilder.Entity(entryType.ClrType).Property<Guid>("ID").ValueGeneratedNever().HasDefaultValueSql("NEWID()");
+ }

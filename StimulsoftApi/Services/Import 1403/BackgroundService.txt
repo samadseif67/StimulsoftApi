@@ -1,0 +1,58 @@
+using EfficiencyManagement.Service.BackgroundLive.Interface;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
+
+namespace EfficiencyManagement.Web.ServiceLive
+{
+    public class JobService : BackgroundService
+    {
+        private readonly IBackgroundLiveRepository BackgroundLiveRepository;
+        private readonly IConfiguration Configuration;
+        private readonly ILogger<JobService> Logger;
+        private readonly IWebsiteUrlStore WebsiteUrlStore;
+        private readonly IInternetCheckService InternetCheckService;
+        public JobService(IBackgroundLiveRepository _BackgroundLiveRepository,IConfiguration _Configuration, ILogger<JobService> _Logger, IWebsiteUrlStore _WebsiteUrlStore, IInternetCheckService _InternetCheckService)
+        {
+            BackgroundLiveRepository = _BackgroundLiveRepository;
+            Configuration = _Configuration;
+            Logger = _Logger;
+            WebsiteUrlStore = _WebsiteUrlStore;
+            InternetCheckService = _InternetCheckService;
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            Logger.LogInformation("background is service in start");
+            while(!stoppingToken.IsCancellationRequested)
+            {
+              
+                string UrlWebSite = WebsiteUrlStore.GetWebsiteUrl();
+                //bool IsInternetAvailable= await InternetCheckService.IsInternetAvailableAsync();
+
+
+                if (UrlWebSite!=null)
+                {
+                    await BackgroundLiveRepository.SendMsgForUserForPlanDetailes(UrlWebSite);
+                } 
+
+                await DoWorkAsync(stoppingToken);
+
+                await Task.Delay(TimeSpan.FromSeconds(15), stoppingToken);
+                 
+            }
+
+            Logger.LogInformation("background is service in stoping");
+        }
+
+        private Task DoWorkAsync (CancellationToken stoppingToken)
+        {
+            return Task.CompletedTask;
+        }
+
+
+
+
+
+
+    }
+}

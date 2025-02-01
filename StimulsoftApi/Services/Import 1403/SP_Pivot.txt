@@ -1,0 +1,92 @@
+ 
+ 
+
+ALTER proc [dbo].[spReport]
+@ProvinceID int=7,
+@CountryID int=135,
+@BranchID int=1,
+@fromDatePersian nvarchar(50) = '1402/01/01',
+@ToDatePersian nvarchar(50) = '1402/06/31'
+
+as
+declare 
+@fromDateMiladi date,
+@ToDateMiladi date,
+
+@ColumnNames nvarchar(max),
+@CopyColumnNames nvarchar(max),
+@SumColumn nvarchar(max),
+@SumRow nvarchar(max),
+@Strproc nvarchar(max)
+
+ 
+ select  @ColumnNames=ISNULL(@ColumnNames+',','')+QUOTENAME(ID) ,
+         @CopyColumnNames=ISNULL(@CopyColumnNames+',','')+'dbo.FnConvertNumberToMoney(Coalesce('+QUOTENAME(ID)+',0)) '+QUOTENAME(ID),
+
+         @SumColumn=ISNULL(@SumColumn+',','')+'Coalesce(sum('+QUOTENAME(ID)+'),0)',
+		 @SumRow=(case when HSF.ID=5 then @SumRow else    ISNULL(@SumRow+'+','')+' Coalesce('+QUOTENAME(ID)+',0)' end)--بجز پرونده های عدم احراز
+
+ from HelpSeekersFileStates HSF
+ where HSF.IsDelete=0
+ order by HSF.ID
+  
+  
+ 
+set @fromDateMiladi = dbo.PersianToMiladi(@fromDatePersian);
+set @ToDateMiladi = dbo.PersianToMiladi(@ToDatePersian);
+
+set @Strproc=';with Tblone as(
+select   MI.ID MainInsuranceID,MI.Title MainInsuranceTitle,
+Coalesce(HSF.HelpSeekersFileStateID,0) HelpSeekersFileStateID,
+HSFS.Title HelpSeekersFileStateTitle, 
+1 CountHelpSeekersFileID,
+Coalesce((case when HSFE.AmountCommitte is null then HSFE.AmountExpert else HSFE.AmountCommitte end),0) AmountExpert
+from Branches B
+left join  Counties C on C.ID=B.CountyID
+left join Provinces P on P.ID=C.ProvinceID
+left join HelpSeekersFiles HSF on HSF.BrancheID=B.ID
+left join HelpSeekersFileExpertReports HSFE on HSFE.HelpSeekersFileID=HSF.ID
+left join HelpSeekersFileStates HSFS on HSFS.ID=HSF.HelpSeekersFileStateID
+left join MainInsurances MI on MI.ID=HSF.MainInsuranceID
+where B.IsDelete=0 and HSF.IsDelete=0 and HSFE.IsDelete=0  and HSF.AcceptDate >='''+cast(@fromDateMiladi as nvarchar(10))+''' and HSF.AcceptDate <='''+cast(@ToDateMiladi as nvarchar(10))+'''  and  
+
+Coalesce(P.ID,0)=(case when '+cast(@ProvinceID as nvarchar(50))+'=0 then Coalesce(P.ID,0) else '+cast(@ProvinceID as nvarchar(50))+' end) and 
+Coalesce(C.ID,0)=(case when '+cast(@CountryID as nvarchar(50))+'=0 then Coalesce(C.ID,0) else '+cast(@CountryID as nvarchar(50))+' end) and 
+Coalesce(B.ID,0)=(case when '+cast(@BranchID as nvarchar(50))+'=0 then Coalesce(B.ID,0) else '+cast(@BranchID as nvarchar(50))+' end)  
+
+),tbltwo as
+(
+ select MainInsuranceID,MainInsuranceTitle,AmountExpert,HelpSeekersFileStateID from Tblone
+)
+,tblThree as
+(
+select MainInsuranceID,MainInsuranceTitle,'+@ColumnNames+'
+from tbltwo
+pivot
+(
+   sum(AmountExpert)
+   for HelpSeekersFileStateID in ('+@ColumnNames+')
+
+)As Pivottable
+),tblfoure as
+(
+select (case when  MainInsuranceID is null then 0 else MainInsuranceID  end) MainInsuranceID,(case when  MainInsuranceTitle is null then [dbo].[FuncGetWordEssentionalPersions](1) else MainInsuranceTitle end) MainInsuranceTitle,'+@ColumnNames+'
+from tblThree
+),tblfive as
+(
+select MainInsuranceID,MainInsuranceTitle,'+@ColumnNames+'
+from tblfoure
+union all
+select -1 MainInsuranceID,[dbo].[FuncGetWordEssentionalPersions](2)  MainInsuranceTitle,'+@SumColumn+'
+from tblfoure
+)
+select MainInsuranceTitle,'+@CopyColumnNames+',dbo.FnConvertNumberToMoney('+@SumRow+') SumRow
+from tblfive
+order by MainInsuranceID desc
+'
+
+
+ exec (@Strproc)
+
+
+ 

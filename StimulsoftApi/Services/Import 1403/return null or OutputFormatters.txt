@@ -1,0 +1,1 @@
+builder.Services.AddControllers(options => { options.OutputFormatters.RemoveType<HttpNoContentOutputFormatter>(); });

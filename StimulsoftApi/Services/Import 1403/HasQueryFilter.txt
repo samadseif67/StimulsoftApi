@@ -1,14 +1,14 @@
-base.OnModelCreating(modelBuilder);
+ #region HasQueryFilter
+var softDeleteEntities = modelBuilder.Model.GetEntityTypes()
+.Where(t => typeof(IBaseModel).IsAssignableFrom(t.ClrType));
 
-        var softDeleteEntities = modelBuilder.Model.GetEntityTypes()
-            .Where(t => typeof(ISoftDelete).IsAssignableFrom(t.ClrType));
+foreach (var entityType in softDeleteEntities)
+{
+    var parameter = Expression.Parameter(entityType.ClrType, "e");
+    var filter = Expression.Lambda(
+        Expression.Not(Expression.Property(parameter, "IsDelete")),
+        parameter);
 
-        foreach (var entityType in softDeleteEntities)
-        {
-            var parameter = Expression.Parameter(entityType.ClrType, "e");
-            var filter = Expression.Lambda(
-                Expression.Not(Expression.Property(parameter, "IsDeleted")),
-                parameter);
-
-            modelBuilder.Entity(entityType.Name).SetQueryFilter(filter);
-        }
+    modelBuilder.Entity(entityType.Name).HasQueryFilter(filter);
+}
+#endregion HasQueryFilter

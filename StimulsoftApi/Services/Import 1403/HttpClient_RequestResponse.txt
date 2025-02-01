@@ -1,0 +1,15 @@
+  #region HttpClient
+  HttpClient Client = new HttpClient();
+  Client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", AccessTokenID);
+  string jsonString = JsonConvert.SerializeObject(infoLoginDto);
+  StringContent content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+  string Url = (await ConstantValueSSOService.AddressServerSSOLogin()) + "/api/HomeLogin/LoginUser";
+
+  var Response = await Client.PostAsync(Url, content);
+  int StatusCode = Convert.ToInt32(Response.StatusCode);
+  if (StatusCode == 200)
+  {
+      infoUserDto = await Response.Content.ReadFromJsonAsync<PersonDto>();
+
+  }
+  #endregion HttpClient

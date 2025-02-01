@@ -1,0 +1,19 @@
+   System.Net.ServicePointManager.Expect100Continue = true;
+   System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+
+
+   ItemInfoInput InfoInput = new ItemInfoInput();
+   InfoInput.birth_date = birth_date;
+   InfoInput.national_number = national_number;
+
+   ItemInfoOutPut InfoOutPut = new ItemInfoOutPut();
+   var client = new RestClient("http://250.16.200.138:1000/api.rsc/person1");
+   var request = new RestRequest(Method.POST);
+   request.AddHeader("content-type", "application/json");
+   request.AddHeader("x-azarakhsh-authtoken", "SUKF3625N5");
+   request.AddJsonBody(InfoInput);
+   var Result = client.Execute<ItemInfoResultOutPut>(request);
+   HttpStatusCode StatusCode = Result.StatusCode;
+
+   int StatusCodeNumber = (int)StatusCode;

@@ -1,0 +1,101 @@
+ document.getElementById("uploadButton").addEventListener("click", async () => {
+    const fileInput = document.getElementById("fileInput");
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Please select a file.");
+        return;
+    }
+
+    // تبدیل فایل به آرایه بایت
+    const arrayBuffer = await file.arrayBuffer();
+    const byteArray = Array.from(new Uint8Array(arrayBuffer)); // تبدیل به آرایه عددی
+
+    // مدل داده‌ای که ارسال می‌شود
+    const fileModel = {
+        fileName: file.name,
+        fileContent: byteArray // آرایه بایت به صورت JSON
+    };
+
+    // ارسال درخواست به API
+    try {
+        const response = await fetch("https://your-api-url/upload", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(fileModel) // ارسال مدل JSON
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            alert(result.message);
+        } else {
+            console.error("Upload failed.", await response.text());
+        }
+    } catch (error) {
+        console.error("Error uploading file:", error);
+    }
+});
+
+
+//*******************************************************************************************************
+public class myAttachmentList  
+{
+   
+    public string FileName { get; set; }
+
+    public Guid? ForeignKeyID { get; set; }
+    public byte[] FileAttach { get; set; }
+
+    public string Description { get; set; }
+
+    [MaxLength(25)]
+    public string TitleExtension { get; set; }
+
+    public DateTime Date { get; set; }
+    public byte[] Attachment { get; set; }        
+    public List<Int64> AttachmentNumber { get; set; }
+    public Guid DocumentTypeID { get; set; }
+    public byte[] GetAttachmentFile()
+    {
+        if(AttachmentNumber.Count()!=0 && AttachmentNumber!=null)
+        {
+            return AttachmentNumber.Select(i => (byte)i).ToArray();
+        }
+        return null;         
+    }
+
+  
+}
+
+
+
+public class myAttachmentConvertList
+{
+    public int ID { get; set; }
+    public myAttachmentList AttachFile { get; set; }
+     
+}
+
+
+ [HttpPost]
+ public IActionResult ImportExcell(myAttachmentConvertList data)
+ {
+     byte[] fileAttach= data.AttachFile.GetAttachmentFile();
+     string fileName = data.AttachFile.FileName;
+
+     
+     //string pathFileName = Directory.GetCurrentDirectory() + @"\Reports\" + fileName;
+     //fileAttach = System.IO.File.ReadAllBytes(pathFileName);
+
+
+     string pathFileName1 = Directory.GetCurrentDirectory() + @"\Excells\" + fileName;
+
+     using var stream = System.IO.File.Create(pathFileName1);
+     stream.Write(fileAttach, 0, fileAttach.Length);
+      
+     return Ok();
+ }
+
+

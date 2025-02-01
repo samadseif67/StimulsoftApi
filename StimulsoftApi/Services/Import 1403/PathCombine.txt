@@ -1,0 +1,3 @@
+ string wwwPath = this.Environment.WebRootPath;
+ string contentPath = this.Environment.ContentRootPath;
+ string imageFilePath = Path.Combine(this.Environment.WebRootPath, "Images/CaptchaBackground.png");

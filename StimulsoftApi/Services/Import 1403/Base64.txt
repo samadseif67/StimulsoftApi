@@ -1,0 +1,3 @@
+  byte[] imageBytes = ms.ToArray();
+  string image = Convert.ToBase64String(imageBytes);
+  image = "data:image/png;base64," + image;

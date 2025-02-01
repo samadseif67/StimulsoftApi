@@ -1,0 +1,31 @@
+ 
+//*******************************************************************************************************************************************
+//Login
+var FullName = findPerson.FirstName + " " + findPerson.LastName;
+ var Claims = new List<Claim>
+  {
+  new Claim("UserID",Convert.ToString(finduser.id)),
+  new Claim("UniqueUserID",Convert.ToString(finduser.UniqueUserId)),
+  new Claim("FullName",FullName),
+  };
+
+ var claimsIdentity = new ClaimsIdentity(Claims, "Login");
+ ClaimsPrincipal principal = new ClaimsPrincipal(claimsIdentity);
+ var authProperties = new AuthenticationProperties
+ {
+
+ };
+ await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+
+
+//********************************************************************************************************************************************
+//LogOut
+
+  [AllowAnonymous]
+  public async Task<IActionResult> Logout()
+  {
+      await HttpContext.SignOutAsync();      
+      return RedirectToAction("Login", "Home");
+  }
+
+//**********************************************************************************************************************************************

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("StimulsoftApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7c39f7f55782e7b356054fee31cb024162e69740")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a5d0ae30b9ab7b054aa0b8c551f897fb38823ce8")]
 [assembly: System.Reflection.AssemblyProductAttribute("StimulsoftApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("StimulsoftApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

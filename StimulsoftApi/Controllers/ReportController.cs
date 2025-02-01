@@ -15,10 +15,14 @@ using System.Reflection;
 [Route("api/[controller]/[action]")]
 public class ReportController : ControllerBase
 {
+
+    private readonly IConfiguration _confiption;
+
     private readonly IWebHostEnvironment webHostEnvironment;
-    public ReportController(IWebHostEnvironment webHostEnvironment)
+    public ReportController(IWebHostEnvironment webHostEnvironment, IConfiguration confiption)
     {
         this.webHostEnvironment = webHostEnvironment;
+        _confiption = confiption;
     }
 
 
@@ -361,6 +365,18 @@ public class ReportController : ControllerBase
             new SampleData { Id = 2, Name = "Item 2", Value = 200 },
         };
     }
+
+
+    //**********************************************************************
+    [HttpPost]
+    public ActionResult ReadFromAppsetting()
+    {
+        string result = _confiption["keyAll:key"];
+        return Ok(result);
+    }
+
+    //***********************************************************************
+
 }
 
 public class SampleData
