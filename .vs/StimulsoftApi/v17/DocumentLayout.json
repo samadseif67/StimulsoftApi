@@ -1,12 +1,7 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "E:\\project\\StimulsoftProject\\StimulsoftApi\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{F43CA234-3BD8-4A8A-A86C-24BED6A2B587}|StimulsoftApi\\StimulsoftApi.csproj|e:\\project\\stimulsoftproject\\stimulsoftapi\\stimulsoftapi\\attrbutevalidation\\myvalidationattribute.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{F43CA234-3BD8-4A8A-A86C-24BED6A2B587}|StimulsoftApi\\StimulsoftApi.csproj|solutionrelative:stimulsoftapi\\attrbutevalidation\\myvalidationattribute.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    }
-  ],
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -14,7 +9,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": -1,
           "Children": [
             {
               "$type": "Bookmark",
@@ -31,19 +26,6 @@
             {
               "$type": "Bookmark",
               "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "MyValidationAttribute.cs",
-              "DocumentMoniker": "E:\\project\\StimulsoftProject\\StimulsoftApi\\StimulsoftApi\\AttrbuteValidation\\MyValidationAttribute.cs",
-              "RelativeDocumentMoniker": "StimulsoftApi\\AttrbuteValidation\\MyValidationAttribute.cs",
-              "ToolTip": "E:\\project\\StimulsoftProject\\StimulsoftApi\\StimulsoftApi\\AttrbuteValidation\\MyValidationAttribute.cs",
-              "RelativeToolTip": "StimulsoftApi\\AttrbuteValidation\\MyValidationAttribute.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-02-22T12:30:32.58Z",
-              "EditorCaption": ""
             }
           ]
         }
