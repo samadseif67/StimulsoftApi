@@ -1,0 +1,367 @@
+    public ActionResult LoadGridFile_Documents(string sidx, string sord, int page, int rows,
+    string multiSearchList, string TableName = "", int TableID = 0)
+    {
+
+        int TableNameID = 0;
+        var FindTableNames = Context.TableNames.FirstOrDefault(x => x.Name == TableName);
+        TableNameID = FindTableNames == null ? 0 : FindTableNames.ID;
+
+
+
+        var Query = ContextFile.File_Documents.Where(x => x.IsDelete == false && x.TableNameID == TableNameID && x.TableID == TableID).Select(x => new
+        {
+            x.ID,
+            x.Title,
+            x.EncryptID,
+            x.File_DocumentTypes,
+            x.File_DocumentTypeID,
+            x.File_ExtensionID,
+
+        }).ToList().Select(x => new SearchFile_Documents
+        {
+            ID = x.ID,
+            EncryptID = x.EncryptID,
+            File_DocumentTypeGroupTitle = x.File_DocumentTypeID == null ? "" : x.File_DocumentTypes.File_DocumentTypeGroups.Title,
+            File_DocumentTypeTitle = x.File_DocumentTypeID == null ? "" : x.File_DocumentTypes.Title,
+            Title = x.Title,
+            FileContent = x.ID,
+            HasFileContent = x.File_ExtensionID == null ? 0 : 1,
+            DownloadFileContent = x.ID
+
+        }).ToList();
+
+        IQueryable<SearchFile_Documents> myList = (Query.Cast<SearchFile_Documents>()).ToList().AsQueryable();
+
+        var filteredList = myList;
+        RepositoryFilter<SearchFile_Documents> rf = new RepositoryFilter<SearchFile_Documents>(Context);
+        filteredList = rf.FilterList(filteredList, multiSearchList);
+        IQueryable<SearchFile_Documents> sortedList = Utility.SortIQueryable<SearchFile_Documents>(filteredList, sidx, sord);
+
+        var totalRecords = filteredList.Count();
+        var totalPages = (int)Math.Ceiling((double)totalRecords / (double)rows);
+        var _sortedList = sortedList.Cast<SearchFile_Documents>().ToList();
+
+        var data = _sortedList.Select(x => new
+        {
+            x.ID,
+            x.EncryptID,
+            x.File_DocumentTypeGroupTitle,
+            x.File_DocumentTypeTitle,
+            x.Title,
+            x.FileContent,
+            x.HasFileContent,
+            x.DownloadFileContent
+
+        }).ToList();
+
+        var Result = new
+        {
+            total = totalPages,
+            page = page,
+            records = totalRecords,
+            rows = data.Skip((page - 1) * rows).Take(rows),
+        };
+
+
+        return Json(Result);
+    }
+
+//*********************************************************************************************
+
+
+
+
+
+ #region SortGrid
+
+
+ public interface IRepositoryFilter<T> where T : class
+ {
+     IQueryable<T> FilterList(IQueryable<T> filtered, string multiSearchList);
+ }
+
+ public class RepositoryFilter<T> : IRepositoryFilter<T> where T : class
+ {
+     private readonly DbSet<T> entities;
+     public RepositoryFilter(DbContext context)
+     {
+         entities = context.Set<T>();
+     }
+
+     public IQueryable<T> FilterList(IQueryable<T> filtered, string multiSearchList)
+     {
+         Utility service = new Utility();
+
+         List<MultiColumnSearchModel> multiColumnSearchList = new List<MultiColumnSearchModel>();
+         if (multiSearchList != null)
+         {
+             multiColumnSearchList = JsonConvert.DeserializeObject<List<MultiColumnSearchModel>>(multiSearchList);
+             multiColumnSearchList = JsonConvert.DeserializeObject<List<MultiColumnSearchModel>>(multiSearchList);
+             multiColumnSearchList = multiColumnSearchList == null ? new List<MultiColumnSearchModel>() : multiColumnSearchList;
+         }
+
+         List<T> resultList = new List<T>();
+
+         foreach (var item in multiColumnSearchList)
+         {
+             var searchOper = item.Operator.Trim();
+             var searchField = item.Column.Trim();
+             var searchString = item.Data.Trim();
+
+             filtered = resultList.Count() == 0 ? filtered : resultList.ToList().AsQueryable();
+
+             if (searchOper.Length == 0 || searchField.Length == 0 || searchString.Length == 0)
+             {
+                 continue;
+             }
+
+             #region cn //شامل است
+
+             if (searchOper == "cn")//شامل است
+             {
+
+                 filtered = filtered.ToList().AsQueryable().Where(s =>
+                     (typeof(T).GetProperty(service.CorrectStringWithoutSpace(searchField)).GetValue(s, null) == null) ? false :
+                         typeof(T).GetProperty(service.CorrectStringWithoutSpace(searchField)).GetValue(s, null)
+                         .ToString().Contains(service.CorrectStringWithoutSpace(searchString)));
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion cn
+
+             #region nc //شامل نیست
+
+             if (searchOper == "nc")//شامل نیست
+             {
+                 var filtered1 = filtered.ToList().AsQueryable().Where(s =>
+                     (typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null) == null) ? false :
+                         typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null)
+                         .ToString().Contains(service.CorrectString(searchString)));
+                 filtered = filtered.Except(filtered1);
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion nc
+
+
+
+             #region eq //برابر است
+
+             if (searchOper == "eq")//برابر است
+             {
+                 filtered = filtered.ToList().AsQueryable().Where(s =>
+                    (typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null) == null) ? false :
+                        typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null)
+                        .ToString().Equals(service.CorrectString(searchString)));
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion eq
+
+             #region ne //برابر نیست
+
+             if (searchOper == "ne")//برابر نیست
+             {
+                 filtered = filtered.ToList().AsQueryable().Where(s =>
+                   (typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null) == null) ? false :
+                       typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null)
+                       .ToString() != (service.CorrectString(searchString)));
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion ne
+
+
+
+             #region bw //شروع میشود
+
+             if (searchOper == "bw")// شروع میشود  
+             {
+                 filtered = filtered.ToList().AsQueryable().Where(s =>
+                   (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                       typeof(T).GetProperty(searchField).GetValue(s, null)
+                       .ToString().StartsWith(service.CorrectString(searchString)));
+
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion bw
+
+             #region bn //شروع نمیشود
+
+             if (searchOper == "bn")// شروع نمیشود  
+             {
+                 var filtered_bn = filtered.ToList().AsQueryable().Where(s =>
+                   (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                       typeof(T).GetProperty(searchField).GetValue(s, null)
+                       .ToString().StartsWith(service.CorrectString(searchString)));
+                 filtered = filtered.ToList().AsQueryable().Except(filtered_bn);
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion bn
+
+
+
+             #region ew //پایانش تمام میشود
+
+             if (searchOper == "ew")//پایانش تمام میشود   
+             {
+                 filtered = filtered.ToList().AsQueryable().Where(s =>
+                   (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                       typeof(T).GetProperty(searchField).GetValue(s, null)
+                       .ToString().EndsWith(service.CorrectString(searchString)));
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion ew
+
+             #region en // پایان شامل نیست
+
+             if (searchOper == "en")//  پایان شامل نیست    
+             {
+                 var filtered_en = filtered.ToList().AsQueryable().Where(s =>
+                   (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                       typeof(T).GetProperty(searchField).GetValue(s, null)
+                       .ToString().EndsWith(service.CorrectString(searchString)));
+                 filtered = filtered.Except(filtered_en);
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion en
+
+
+
+             #region small // کوچکتر 
+
+             if (searchOper == "small")
+             {
+                 string typeVariable = typeof(T).GetProperties().FirstOrDefault(property => property.Name == searchField).PropertyType.Name;
+                 if (typeVariable == "Int32" || typeVariable == "double")
+                 {
+                     filtered = filtered.ToList().AsQueryable().Where(s =>
+                    (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                     Convert.ToInt32(typeof(T).GetProperty(searchField).GetValue(s, null).ToString()) < (Convert.ToInt32(searchString))
+                    );
+                 }
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion small
+
+             #region smallequal // کوچکتر یا مساوی با
+
+             if (searchOper == "smallequal")
+             {
+                 string typeVariable = typeof(T).GetProperties().FirstOrDefault(property => property.Name == searchField).PropertyType.Name;
+                 if (typeVariable == "Int32" || typeVariable == "double")
+                 {
+                     filtered = filtered.ToList().AsQueryable().Where(s =>
+                    (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                     Convert.ToInt32(typeof(T).GetProperty(searchField).GetValue(s, null).ToString()) <= (Convert.ToInt32(searchString))
+                    );
+                 }
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion smallequal
+
+
+
+             #region Large // بزرگتر
+
+             if (searchOper == "large")
+             {
+                 string typeVariable = typeof(T).GetProperties().FirstOrDefault(property => property.Name == searchField).PropertyType.Name;
+                 if (typeVariable == "Int32" || typeVariable == "double")
+                 {
+                     filtered = filtered.ToList().AsQueryable().Where(s =>
+                    (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                     Convert.ToInt32(typeof(T).GetProperty(searchField).GetValue(s, null).ToString()) > (Convert.ToInt32(searchString))
+                    );
+                 }
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion Large // بزرگتر
+
+             #region largeequal // بزرگتر یا مساوی با
+
+             if (searchOper == "largeequal")
+             {
+                 string typeVariable = typeof(T).GetProperties().FirstOrDefault(property => property.Name == searchField).PropertyType.Name;
+                 if (typeVariable == "Int32" || typeVariable == "double")
+                 {
+                     filtered = filtered.ToList().AsQueryable().Where(s =>
+                    (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                     Convert.ToInt32(typeof(T).GetProperty(searchField).GetValue(s, null).ToString()) >= (Convert.ToInt32(searchString))
+                    );
+                 }
+
+                 resultList.RemoveRange(0, resultList.Count());
+                 resultList.AddRange(filtered);
+             }
+
+             #endregion Large // بزرگتر یا مساوی با
+
+
+             filtered = resultList.Count() == 0 ? filtered : resultList.ToList().AsQueryable();
+         }
+
+         return filtered;
+     }
+ }
+
+ public IQueryable<T> SortIQueryable<T>(IQueryable<T> data, string fieldName, string sortOrder)
+ {
+     if (string.IsNullOrWhiteSpace(fieldName)) return data;
+     if (string.IsNullOrWhiteSpace(sortOrder)) return data;
+
+     var param = Expression.Parameter(typeof(T), "i");
+     Expression conversion = Expression.Convert(Expression.Property(param, fieldName), typeof(object));
+     var mySortExpression = Expression.Lambda<Func<T, object>>(conversion, param);
+
+     return (sortOrder == "desc") ? data.OrderByDescending(mySortExpression)
+         : data.OrderBy(mySortExpression);
+ }
+
+ public string CorrectString(string myText)
+ {
+     return myText.Replace(" ", "").Replace('ی', 'ي').Replace('ک', 'ك').Replace("\t", " ");
+ }
+
+ public string CorrectStringWithoutSpace(string myText)
+ {
+     return myText.Replace('ی', 'ي').Replace('ک', 'ك').Replace("\t", " ");
+ }
+
+
+
+ #endregion SortGrid
+
+
+
+
+

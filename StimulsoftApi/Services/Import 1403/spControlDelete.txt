@@ -1,0 +1,83 @@
+ 
+ALTER PROCEDURE [dbo].[spControlDelete]
+--declare
+@PTable nvarchar(100),
+@PField nvarchar(100),
+@PCode nvarchar(100),
+@MemberID nvarchar(100)
+
+--set @PTable = 'dbo.Person'
+--set @PField = 'ID'
+--set @PCode = 10
+--set @MemberID = 1
+
+as
+if(CHARINDEX('.', @PTable, 0) > 0)
+BEGIN
+DECLARE @FTable nvarchar(100)
+, @FField nvarchar(100)
+, @SchemaName nvarchar(100) = ''
+, @FTableWithoutSchema nvarchar(100) = ''
+
+declare @DynamicSQL nvarchar(1000)
+
+declare 
+@hasData int
+, @HasIsDelete int
+, @TableName nvarchar(250)
+
+set @hasData = 0
+set @HasIsDelete = 0
+set @TableName = N''
+
+DECLARE cu CURSOR FOR
+	select ForeignTable, ForeignField from(
+		select CONCAT(sch.name, '.', st.name) PrimaryTable ,  ft.ForeignTable, ft.ForeignField
+		from sys.tables st
+			left outer join sys.schemas sch on st.schema_id = sch.schema_id
+			left outer join (select concat(s.name, '.', t.name) as ForeignTable, c.name as ForeignField 
+						, fk.referenced_object_id ID
+						from sys.foreign_key_columns as fk
+							inner join sys.tables as t on fk.parent_object_id = t.object_id
+							inner join sys.columns as c on fk.parent_object_id = c.object_id and fk.parent_column_id = c.column_id
+							left outer join sys.schemas s on t.schema_id = s.schema_id
+						--where t.name not in ('MajorplanNumbers', 'PlanNumbers', 'ProjectNumbers')
+			)ft on ft.ID = st.object_id
+		where ForeignTable is not null
+	) t where t.PrimaryTable = @PTable
+open cu
+FETCH NEXT FROM cu INTO  @FTable,@FField
+WHILE @@FETCH_STATUS = 0 
+begin
+	set @SchemaName = left( @FTable, CHARINDEX('.', @FTable, 0)-1)
+	set @FTableWithoutSchema = right( @FTable, len(@FTable) - CHARINDEX('.', @FTable, 0))
+	SELECT @HasIsDelete = COUNT(COLUMN_NAME) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @FTableWithoutSchema and TABLE_SCHEMA =  @SchemaName and COLUMN_NAME = 'IsDelete'
+	set @DynamicSQL='select top(1) @x = 1, @TName = '''+ @FTable +''' from ' + @FTable + ' where '+ (case when (@HasIsDelete = 1) then 'IsDelete = 0 and ' else '' end) +  @FField + '=' + @PCode
+	exec sp_executesql @DynamicSQL, N'@x int out, @TName nvarchar(250) out', @hasData out, @TableName out
+	if @hasData = 1 
+		goto HasData
+	FETCH NEXT FROM cu INTO  @FTable,@FField
+end
+HasData:
+begin
+	close cu
+	DEALLOCATE cu
+end--HasData:
+
+ 
+
+
+	
+if @hasData = 0 begin
+	set @DynamicSQL = 'update ' +  @PTable +' set IsDelete = 1,MemberID = '+ @MemberID + ' where ' + @PField  + '=' + @PCode ;
+	exec sp_executesql @DynamicSQL
+end --if @hasData = 0 begin
+
+select 1 ID,case when @hasData = 0 then 1 else 0 end CanDelete
+	,@TableName as TableName
+	END
+	ELSE
+	BEGIN
+	select 1 ID,0
+	,'SchemaError' as TableName
+	END

@@ -1,0 +1,25 @@
+  public List<int> GetTreeBranch(int BranchID = 0)
+  {
+      List<int> LstBranchID = new List<int>();
+      List<int> FinalLstBranchID = new List<int>();
+      var LstBranches = Context.Branches.Where(x => x.IsDelete == false).ToList();
+      FinalLstBranchID = RecersiveTreeBranch(ref LstBranchID, ref BranchID, ref LstBranches);
+      return FinalLstBranchID;
+  }
+
+  private List<int> RecersiveTreeBranch(ref List<int> LstBranchID, ref int BranchID, ref List<Branch> LstBranches)
+  {
+      int V_BranchID = BranchID;
+      var FindParentBranch = LstBranches.Where(x => x.PID == V_BranchID).Select(x => new { x.ID, x.PID }).ToList();
+      if (FindParentBranch != null)
+      {
+          foreach (var item in FindParentBranch)
+          {
+              V_BranchID = item.ID;
+              LstBranchID.Add(item.ID);
+              RecersiveTreeBranch(ref LstBranchID, ref V_BranchID, ref LstBranches);
+          }
+      }
+
+      return LstBranchID;
+  }

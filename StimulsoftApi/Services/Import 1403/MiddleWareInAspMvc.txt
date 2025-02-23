@@ -1,0 +1,31 @@
+
+
+ protected void Application_PreRequestHandlerExecute(object sender, EventArgs e)
+ {
+     try
+     {
+         if (User.Identity.IsAuthenticated)
+         {
+             int MembershipID = Convert.ToInt32(Session["MembershipID"]);
+             if (MembershipID != 0)
+             {
+                 Guid V_Guid = new Guid(Convert.ToString(Session["GuidMembershipID"]));
+                 string IPClient = Convert.ToString(Session["IPClient"]);
+                 string FilePath = Request.FilePath;
+  
+             }
+             else
+             {
+
+             }
+
+         }
+
+     }
+     catch (Exception)
+     {
+
+         //throw;
+     }
+
+ }

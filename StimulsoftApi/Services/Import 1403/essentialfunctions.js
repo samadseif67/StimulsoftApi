@@ -498,10 +498,17 @@ function FuncCreateDateBoxKamaDatePicker(Title, ElementID) {
 
 
 
-function CreateSelectChosen(Title, DivReplace, DataInfoSelect, NameElementSelect, ValueSetSelect, NotFirstOption = 1) {
+function CreateSelectChosen(Title, DivReplace, DataInfoSelect, NameElementSelect, ValueSetSelect, NotFirstOption = 1,FuncNameForChange="") {
     var TextSelect = "";
     TextSelect += "<label>" + Title + "</label>";
-    TextSelect += '<select class="form-control chosen-select" style="width:100%" id="' + NameElementSelect + '"></select>'
+    if (FuncNameForChange.trim().length == 0) {
+        TextSelect += '<select class="form-control chosen-select" style="width:100%" id="' + NameElementSelect + '"></select>'
+    }
+    else
+    {
+        TextSelect += '<select onchange="' + FuncNameForChange +'" class="form-control chosen-select" style="width:100%" id="' + NameElementSelect + '"></select>'
+    }
+   
     $("#" + DivReplace).html(TextSelect);
     SetValueSelect(DataInfoSelect, NameElementSelect, ValueSetSelect, NotFirstOption);
     FuncChosenReady();
@@ -528,7 +535,10 @@ function FuncChosenReady() {
     }
 }
 
-
+function FuncUpdateChosen(ElementID)
+{
+    $("#" + ElementID).trigger("chosen:updated");
+}
 
 function SetDatePicker(ElementName) {
     $("#" + ElementName).kendoDatePicker();

@@ -1,0 +1,69 @@
+  public string CreateNumberLetter(int LetterID, string OldDateLetterPerson, string NewDateLetterPerson)
+  {
+      using (FardadInternalDBEntities Context = new CopyFardadInternalDBEntities().Create())
+      {
+          var FindLetters_DateOfFiling = Context.Letters.FirstOrDefault(x => x.IsDelete == false && x.ID == LetterID);
+
+
+          DateTime DT_DateOfFiling = FindLetters_DateOfFiling == null ? DateTime.Now : (FindLetters_DateOfFiling.DateLetter == null ? DateTime.Now : (DateTime)FindLetters_DateOfFiling.DateLetter);
+
+
+
+
+          string YearAll = PersianDate.ToPersianYear(DT_DateOfFiling);
+          string Year = YearAll.Substring(0, 4);//sample 1403
+
+
+
+
+          string DtNowPersion = PersianDate.ToPersian(DT_DateOfFiling);
+          string PartFromYear = DtNowPersion.Substring(0, 4);
+
+
+          //در این قسمت نیازی به isDelete نیست
+          var LstLetters = Context.Letters.Where(x => x.ID != LetterID && x.NumberLetter!=null).Select(x => new { x.ID, x.NumberLetter }).ToList();
+
+
+
+          var ResultLstLetters = LstLetters.Select(x => new
+          {
+              x.ID,
+              Year = x.NumberLetter.Substring(0, 4),
+              SplitDash = x.NumberLetter.Substring(4, 1),
+              NumberLettersOrContract = x.NumberLetter.Substring(5, 2),//اگر عدد 11 باشد یعنی دعاوی                                                          
+              SeriCodeNumber = Convert.ToInt32(x.NumberLetter.Substring(7, 4))
+
+          }).ToList().Where(x => x.Year == PartFromYear).ToList();
+
+
+
+          int SeriCodeNumber = ResultLstLetters.Count() == 0 ? 0 : ResultLstLetters.Max(x => x.SeriCodeNumber);
+          string SeriCodeNumberToStr = Convert.ToString(SeriCodeNumber + 1);
+
+          int LengthSeriCode = 4;//طول سری کد باید چهار تا باشد درصورتی که کمتر باشد باید پشت آن صفر قرار بدهیم
+          int FinalLength = LengthSeriCode - SeriCodeNumberToStr.Length;
+          string CountZero = "";
+          for (int i = 0; i < FinalLength; i++)
+          {
+              CountZero += "0";
+          }
+          SeriCodeNumberToStr = CountZero + SeriCodeNumberToStr;
+
+
+
+          string NumberLettersOrContract = "22";
+          var FindLetters = Context.Letters.FirstOrDefault(x => x.IsDelete == false && x.ID == LetterID);
+          string Result = Year + "-" + NumberLettersOrContract + SeriCodeNumberToStr;
+
+
+
+          if (OldDateLetterPerson == NewDateLetterPerson && FindLetters.NumberLetter != null)
+          {
+              Result = FindLetters.NumberLetter;
+          }
+
+          return Result;
+
+      }
+
+  }

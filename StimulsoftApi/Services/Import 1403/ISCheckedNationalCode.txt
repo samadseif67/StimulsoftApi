@@ -1,0 +1,51 @@
+  public bool ISCheckedNationalCode(string NationalCode)
+  {
+      try
+      {
+
+          NationalCode = NationalCode == null ? "" : NationalCode;
+          if (NationalCode.Trim().Length != 10)
+          {
+              return false;
+          }
+
+
+
+          char[] chArray = NationalCode.ToArray();
+          int[] numArray = new int[chArray.Length];
+          for (int i = 0; i < chArray.Length; i++)
+          {
+              numArray[i] = (int)char.GetNumericValue(chArray[i]);
+          }
+          int num2 = numArray[9];
+          if (NationalCode == "0000000000" || NationalCode == "1111111111" || NationalCode == "2222222222" ||
+          NationalCode == "3333333333" || NationalCode == "4444444444" || NationalCode == "5555555555" ||
+          NationalCode == "6666666666" || NationalCode == "7777777777" || NationalCode == "8888888888" ||
+          NationalCode == "9999999999")
+          {
+
+              return false;
+
+          }
+          else
+          {
+              int num3 = ((((((((numArray[0] * 10) + (numArray[1] * 9)) + (numArray[2] * 8)) + (numArray[3] * 7)) + (numArray[4] * 6)) + (numArray[5] * 5)) + (numArray[6] * 4)) + (numArray[7] * 3)) + (numArray[8] * 2);
+              int num4 = num3 - ((num3 / 11) * 11);
+              if ((((num4 == 0) && (num2 == num4)) || ((num4 == 1) && (num2 == 1))) || ((num4 > 1) && (num2 == Math.Abs((int)(num4 - 11)))))
+              {
+                  return true;
+              }
+              else
+              {
+
+                  return false;
+
+              }
+          }
+      }
+      catch
+      {
+          return false;
+      }
+
+  }

@@ -1,0 +1,34 @@
+ 
+ALTER TRIGGER [dbo].[OrganizationsUpdateHistory]
+   ON   [dbo].[Organizations]
+   AFTER  Update
+AS 
+BEGIN
+declare @RowID int,
+ @MemberID int,
+  @IsDelete bit,
+  @TableID int,
+  @ChangeTypeID int
+  select @TableID=ID   from dbo.TableName where Name ='Organizations'
+	select @RowID = ins.ID, @IsDelete=IsDelete,@MemberID=MemberID from inserted ins
+	 set @ChangeTypeID = case when @IsDelete = 0 then 2 else 3 end
+	insert into ChangeHistories(TableNameID,RowID,ChangeTypeID,MemberID,ChangeDate,OldData,NewData)	
+	values(@TableID ,@RowID,@ChangeTypeID,@MemberID,GETDATE(),(select  * from deleted   for json auto),(select  * from inserted   for json auto))
+END
+
+//******************************************************************************************
+ALTER TRIGGER [dbo].[OrganizationsInsertHistory]
+   ON   [dbo].[Organizations]
+   AFTER  INSERT
+AS 
+BEGIN
+declare @RowID int,
+ @MemberID int,
+  @IsDelete bit,
+  @TableID int
+  select @TableID=ID   from dbo.TableName where Name ='Organizations'
+	select @RowID = ins.ID, @IsDelete=IsDelete,@MemberID=MemberID from inserted ins
+
+	insert into ChangeHistories(TableNameID,RowID,ChangeTypeID,MemberID,ChangeDate)
+	values(@TableID ,@RowID,1,@MemberID,GETDATE())
+END
