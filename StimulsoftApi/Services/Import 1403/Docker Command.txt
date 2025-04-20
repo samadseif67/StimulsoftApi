@@ -1,0 +1,58 @@
+docker image ls  //لیستی از ایمیج ها
+docker image rm Adesc1425  //برای حذف کردن ایمیج کافیست دستور زیر را وارد کنیم و در انتها شناسه ایمیج را بزنیم
+
+
+docker ps        //نمایش تمام کانتینرهای فعال
+docker ps -a     //نمایش تمام کانتینرها 
+
+docker pull nginx:1.27.5  //برای گرفتن ورژن خاصی از ایمج کافی ست از دونقطه و بعدش شماره ورژن استفاده کنیم
+docker container stop  Adesc1425  //برای متوقف کردن کانتینتر کافیست دستور زیر را  کنیم و در انتها شناسه کانتینر را بزنیم
+docker container start  Adesc1425  //برای استارت کردن کانتینتر کافیست دستور زیر را  کنیم و در انتها شناسه کانتینر را بزنیم
+docker container restart Adesc1425  //برای ریستارت کردن کانتینتر کافیست دستور زیر را  کنیم و در انتها شناسه کانتینر را بزنیم
+docker rm Adesc1425   //برای حذف کانتینر
+docker rm Adesc1425  BAdesc1423   //برای حذف دو تا کانتینر یا بیشتر
+docker rm -f Adesc1425   //برای حذف کانتینر به اجبار هم که شده حذف شود
+docker exec -it Adesc1425  /bin/bash    //برای ورود به داخل خود کانتینر   
+
+docker volume ls //نمایش تمام ولیوم ها
+docker volume create myAdd1  //ایجاد یک ولیوم
+
+docker volume \ //برای رفتن به خط بعد و ادامه آن از بک اسلش استفاده میکنم
+create myAdd1
+
+
+docker volume inspect my_volume   //برای بررسی ولیوم
+docker container inspect my_Container   //برای بررسی کانتینر
+
+
+docker volume create --driver local --opt type=none --opt device=F:\docker_volumes\my_volume --opt o=bind my_volume  //ایجاد یک ولیوم
+
+
+docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Password" -p 1433:1433 --name RBC  -d mcr.microsoft.com/mssql/server:2017-latest   //نصب اس کیو ال
+docker run -e 'ACCEPT_EULA=Y' -e 'MSSQL_SA_PASSWORD=12345678' -p 1433:1433 -v <host directory>/data:/var/opt/mssql/data -v <host directory>/log:/var/opt/mssql/log -v <host directory>/secrets:/var/opt/mssql/secrets -d mcr.microsoft.com/mssql/server:2017-latest  //نصب اس کیو ال
+
+
+//**********************************************************************************************************************
+ docker volume create --driver local --opt type=none --opt device=F:\docker_volumes\my_volume --opt o=bind my_volume    
+docker run  -v my_volume:/var/opt/mssql/data -v my_volume:/var/opt/mssql/log -v my_volume:/var/opt/mssql/secrets  -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Aa@123456!" -p 1433:1433 --name RBC  -d b2761593c693 //نصب اس کیو ال و در انتهای آن شناسه ایمیج اس کیو ال
+برای ورود به اس کیو ال
+localhost,1433
+sa
+Aa@123456!
+
+
+127.0.0.1\{container_name},1433   //برای نام سرور اس کیو ال
+127.0.0.1\a155c2b59132,1433   //مثال
+sa
+Aa@123456!
+
+
+
+
+//***********************************************************************************************************
+docker network connect <network-name> <container-id>      برای اتصال دادن یک شبکه به کانتینر
+
+//**************************************************************************************************************
+
+
+
