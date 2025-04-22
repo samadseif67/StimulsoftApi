@@ -1,0 +1,82 @@
+public interface IRepository<T> where T : class
+{
+    // سایر متدهای معمول
+    Task BeginTransactionAsync();
+    Task CommitTransactionAsync();
+    Task RollbackTransactionAsync();
+    // ...
+}
+
+//***********************************************************************************************
+
+public class Repository<T> : IRepository<T> where T : class
+{
+    private readonly DbContext _context;
+    private IDbContextTransaction _transaction;
+
+    public Repository(DbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task BeginTransactionAsync()
+    {
+        _transaction = await _context.Database.BeginTransactionAsync();
+    }
+
+    public async Task CommitTransactionAsync()
+    {
+        try
+        {
+            await _context.SaveChangesAsync();
+            await _transaction.CommitAsync();
+        }
+        finally
+        {
+            await _transaction.DisposeAsync();
+        }
+    }
+
+    public async Task RollbackTransactionAsync()
+    {
+        await _transaction.RollbackAsync();
+        await _transaction.DisposeAsync();
+    }
+    
+    // سایر پیاده‌سازی‌های متدهای ریپازیتوری
+}
+
+//*****************************************************************************************
+public class OrderService
+{
+    private readonly IRepository<Order> _orderRepository;
+    private readonly IRepository<OrderItem> _orderItemRepository;
+
+    public OrderService(
+        IRepository<Order> orderRepository,
+        IRepository<OrderItem> orderItemRepository)
+    {
+        _orderRepository = orderRepository;
+        _orderItemRepository = orderItemRepository;
+    }
+
+    public async Task CreateOrderAsync(Order order, List<OrderItem> items)
+    {
+        try
+        {
+            await _orderRepository.BeginTransactionAsync();
+            
+            await _orderRepository.AddAsync(order);
+            await _orderItemRepository.AddRangeAsync(items);
+            
+            await _orderRepository.CommitTransactionAsync();
+        }
+        catch
+        {
+            await _orderRepository.RollbackTransactionAsync();
+            throw;
+        }
+    }
+}
+
+//*******************************************************************************************
