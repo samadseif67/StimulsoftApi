@@ -51,6 +51,15 @@ Aa@123456!
 
 //***********************************************************************************************************
 docker network connect <network-name> <container-id>      برای اتصال دادن یک شبکه به کانتینر
+docker network disconnect <network-name> <container-id>    قطع اتصال کانتینر از شبکه
+docker network rm <network-name>    حذف شبکه
+//************************************************************************************************************
+//برای اتصال یک ولیوم به کانتینر موجود
+
+ابتدا باید یک ایمیج از کانتینر بگیریم و سپس به یک کانتینر ایجاد کنیم از ایمیج ساخته شده کانتینر
+
+
+
 
 //**************************************************************************************************************
 برای اینکه بتوانیم یک صفحه اچتیمیل ساده را روی داکر نمایش بدهیم 
@@ -88,6 +97,36 @@ docker run -d `
   -v C:\Users\HP\Desktop\Awe\html:/usr/share/nginx/html `
    nginx           برای بارگذاری صفحات ساده اچتمل روی انجینیکس
 
+
+
+//****************************************************************************************************************
+//برای نمایش با آدرس خاص در مرورگر
+docker network create --subnet=192.168.148.0/24 my-custom-network
+docker run -d  --name my-container  --network my-custom-network  --ip 192.168.148.198  -p 8021:80  -v C:\Users\HP\Desktop\Awe\html:/usr/share/nginx/html  -v C:\Users\HP\Desktop\Awe\nginx\nginx.conf:/etc/nginx/conf.d/default.conf    your-image-name 
+docker run -d  --name my-containerhtml  --network my-custom-network  --ip 192.168.148.198  -p 8022:80  -v C:\Users\HP\Desktop\Awe\html:/usr/share/nginx/html  -v C:\Users\HP\Desktop\Awe\nginx\nginx.conf:/etc/nginx/conf.d/default.conf    4e1b6bae1e48
+           برای بارگذاری صفحات ساده اچتمل روی انجینیکس
+
+
+version: '3'
+
+services:
+  web:
+    image: your-image-name
+    networks:
+      my-network:
+        ipv4_address: 192.168.148.198
+    ports:
+      - "8021:8021"
+
+networks:
+  my-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.148.0/24
+
+
+docker-compose up -d
 //**************************************************************************************************************
 
 
