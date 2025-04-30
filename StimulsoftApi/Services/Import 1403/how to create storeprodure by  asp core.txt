@@ -1,0 +1,33 @@
+ public class MyDbContext : DbContext
+{
+    public MyDbContext(DbContextOptions<MyDbContext> options) : base(options)
+    {
+    }
+
+    public void CreateStoredProcedures()
+    {
+        // بررسی وجود procedure و ایجاد در صورت عدم وجود
+        var createProcSql = @"
+        IF OBJECT_ID('dbo.GetProductsByCategory', 'P') IS NULL
+        BEGIN
+            EXEC('
+            CREATE PROCEDURE dbo.GetProductsByCategory
+                @CategoryId int
+            AS
+            BEGIN
+                SELECT * FROM Products WHERE CategoryId = @CategoryId
+            END
+            ')
+        END";
+        
+        Database.ExecuteSqlRaw(createProcSql);
+    }
+}
+
+// در Program.cs (یا Startup.cs برای .NET 5 و پایین‌تر)
+var app = builder.Build();
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+    dbContext.CreateStoredProcedures();
+}
