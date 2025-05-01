@@ -128,6 +128,43 @@ networks:
 
 docker-compose up -d
 //**************************************************************************************************************
+ساختار داکرفایل
+
+select os/.net image
+copy appfile
+install dependenci
+configure enviroment
+run app
+
+
+From
+WorkDir /app
+Copy published/ ./
+Entrypoint["dotnet","AppShop.dll"]
 
 
 
+
+
+//**************************************************************************************************************
+برای پاپلیش گرفتن در خط فرمان 
+و در انتها نام پوشه ای که قرار هست پاپلیش در آن قرار بگیرد
+dotnet publish .\HelloDocker.csproj -c Release -o published1404  /p:UseAppHost=false
+
+//************************************************************************************************
+برای پاپلیش گرفتن برای سیستم عامل لینوکس
+  همچنین گرفتن ایمیج پروژه روی داکر
+همچنین گرفتن ایمیج پروژه روی داکر هاب
+dotnet publish --os linux --arch x64 /t:PublishContainer
+dotnet publish --os linux --arch x64 /t:PublishContainer -p ContainerImageTag=1.2
+dotnet publish --os linux --arch x64 /t:PublishContainer -p ContainerImageTag=1.2  -p ContainerRegistery=docker.io    
+
+
+//**************************************************************************************************************
+نحوه ساخت ایمیج از روی داکر فایل
+نقطه انتها به مسیر فایل داکر اشاره میکند
+
+docker build -t  AppShop .
+
+//***************************************************************************************************************
+<ContainerBaseImage><ContainerBaseImage>
