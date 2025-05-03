@@ -1,0 +1,27 @@
+public class ApplicationDbContext : DbContext
+{
+    // متد برای یافتن کلاس‌های پیاده‌ساز اینترفیس از اسمبلی خاص
+    public List<Type> GetInterfaceImplementationsFromAssembly<TInterface>(Assembly targetAssembly)
+    {
+        return targetAssembly.GetTypes()
+            .Where(t => t.IsClass && 
+                       !t.IsAbstract &&
+                       typeof(TInterface).IsAssignableFrom(t))
+            .ToList();
+    }
+
+    // نمونه استفاده:
+    public void RegisterEntitiesFromExternalLibrary()
+    {
+        // بارگذاری اسمبلی مورد نظر (با نام کامل)
+        var externalAssembly = Assembly.Load("MyExternalLibrary");
+        
+        var implementations = GetInterfaceImplementationsFromAssembly<IEntity>(externalAssembly);
+        
+        foreach (var type in implementations)
+        {
+            Console.WriteLine($"Found implementation: {type.FullName}");
+            // انجام عملیات مورد نظر مانند ثبت در مدل
+        }
+    }
+}
