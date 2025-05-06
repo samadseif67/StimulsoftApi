@@ -1,0 +1,15 @@
+ #region Connection
+
+ using var connection = new SqlConnection(myUtilityStatic.GetConnectionString());
+ page = string.IsNullOrEmpty(page?.ToString()) ? "1" : page;
+ using (var resultMultiple = connection.QueryMultiple(!string.IsNullOrEmpty(StoredProcedureName) ? StoredProcedureName : Query, new { Rows = rows, Page = page, Where = where, SortName = sort, SortOrder = sortdir, ExportToExcel = exportToExcel }, commandType: !string.IsNullOrEmpty(StoredProcedureName) ? CommandType.StoredProcedure : CommandType.Text))
+ {
+
+     myResult result = new()
+     {
+         Data = resultMultiple.Read().ToList(),
+         Total = resultMultiple.Read<int>().FirstOrDefault()
+     };
+     return result;
+ };
+ #endregion
