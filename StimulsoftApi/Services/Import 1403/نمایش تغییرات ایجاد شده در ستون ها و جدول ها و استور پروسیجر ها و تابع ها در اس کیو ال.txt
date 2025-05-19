@@ -1,0 +1,29 @@
+SELECT 
+    o.name AS ObjectName,
+    o.type_desc AS ObjectType,
+    o.create_date,
+    o.modify_date,
+    CASE 
+        WHEN o.type IN ('P', 'FN', 'IF', 'TF', 'V') THEN m.definition
+        WHEN o.type = 'U' THEN (
+            SELECT 'Columns: ' + STRING_AGG(c.name + ' ' + ty.name + 
+                   CASE WHEN c.max_length > 0 THEN 
+                       CASE WHEN ty.name IN ('nvarchar', 'nchar') THEN '(' + CAST(c.max_length/2 AS VARCHAR) + ')' 
+                            WHEN ty.name IN ('varchar', 'char', 'binary', 'varbinary') THEN '(' + CAST(c.max_length AS VARCHAR) + ')' 
+                            ELSE '' END 
+                   ELSE '' END, ', ')
+            FROM sys.columns c
+            JOIN sys.types ty ON c.user_type_id = ty.user_type_id
+            WHERE c.object_id = o.object_id
+        )
+        ELSE NULL
+    END AS Definition
+FROM 
+    sys.objects o
+LEFT JOIN 
+    sys.sql_modules m ON o.object_id = m.object_id
+WHERE 
+    o.type IN ('P', 'FN', 'IF', 'TF', 'V', 'U')
+    AND o.modify_date > '2025-05-01'
+ORDER BY 
+    o.modify_date DESC;
