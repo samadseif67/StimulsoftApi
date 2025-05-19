@@ -1,0 +1,105 @@
+ public interface IUnitOfWork<TContext> : IDisposable where TContext : DbContext
+ {
+     #region Normal
+
+     int Save();
+     Task<int> SaveAsync();
+     List<TEntity> ExcuteStoreProcedure<TEntity>(List<SqlParameterDto> LstSqlParameter) where TEntity : class;
+
+     #endregion Normal
+
+
+     #region AllRepository
+
+     UserRepository UserRepository { get; }
+     
+     #endregion AllRepository
+ }
+
+
+
+
+ public class UnitOfWork<TContext> : IUnitOfWork<TContext> where TContext : DbContext, new()
+ {
+     private readonly TContext db;
+     public UnitOfWork(TContext _db)
+     {
+         db = _db;
+     }
+
+     #region Normal
+     public int Save()
+     {
+         return db.SaveChanges();
+     }
+     public async Task<int> SaveAsync()
+     {
+         return await db.SaveChangesAsync();
+     }
+
+
+     public List<TEntity> ExcuteStoreProcedure<TEntity>(List<SqlParameterDto> LstSqlParameter) where TEntity : class
+     {
+         try
+         {
+             string CollectionParameterName = "";
+             foreach (var item in LstSqlParameter)
+             {
+                 CollectionParameterName+= (CollectionParameterName.Trim().Length==0?"":",")+item.ParameterName;
+             }
+
+             string TextCommentSql = "exec dbo.spPlayVideos" + (CollectionParameterName.Trim().Length != 0 ? " " : "") + CollectionParameterName;
+             var lst = db.Set<TEntity>().FromSqlRaw(TextCommentSql,(LstSqlParameter.Select(x=>new SqlParameter(x.ParameterName,x.ParameterValue)).ToArray())).ToList();
+             return lst;
+         }
+         catch (Exception ex)
+         {
+
+             throw;
+         }
+     }
+
+
+     #endregion Normal
+
+
+
+     #region UserRepository
+     private UserRepository userRepository;
+     public UserRepository UserRepository
+     {
+         get
+         {
+             if (userRepository == null)
+             {
+                 userRepository = new UserRepository(db);
+             }
+             return userRepository;
+         }
+     }
+
+     #endregion UserRepository
+
+   
+
+     #region Dispose
+     private bool disposed = false;
+
+     protected virtual void Dispose(bool disposing)
+     {
+         if (!this.disposed)
+         {
+             if (disposing)
+             {
+                 db.Dispose();
+             }
+         }
+         this.disposed = true;
+     }
+     public void Dispose()
+     {
+         Dispose(true);
+         GC.SuppressFinalize(this);
+     }
+     #endregion Dispose
+ }

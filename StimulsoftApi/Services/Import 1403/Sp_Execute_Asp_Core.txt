@@ -1,0 +1,36 @@
+  
+ List<TEntity> ExcuteStoreProcedure<TEntity>(List<SqlParameterDto> LstSqlParameter) where TEntity : class;
+ public List<TEntity> ExcuteStoreProcedure<TEntity>(List<SqlParameterDto> LstSqlParameter) where TEntity : class
+   {
+       try
+       {
+           string CollectionParameterName = "";
+           foreach (var item in LstSqlParameter)
+           {
+               CollectionParameterName+= (CollectionParameterName.Trim().Length==0?"":",")+item.ParameterName;
+           }
+
+           string TextCommentSql = "exec dbo.spPlayVideos" + (CollectionParameterName.Trim().Length != 0 ? " " : "") + CollectionParameterName;
+           var lst = db.Set<TEntity>().FromSqlRaw(TextCommentSql,(LstSqlParameter.Select(x=>new SqlParameter(x.ParameterName,x.ParameterValue)).ToArray())).ToList();
+           return lst;
+       }
+       catch (Exception ex)
+       {
+
+           throw;
+       }
+   }
+
+
+
+
+
+
+
+//**************************************************************************
+
+ List<SqlParameterDto> LstSqlParameter = new List<SqlParameterDto>();
+ LstSqlParameter.Add(new SqlParameterDto() { ParameterName = "@provinceID", ParameterValue = 0 });
+ LstSqlParameter.Add(new SqlParameterDto() { ParameterName = "@electoralFieldID", ParameterValue = 0 });
+
+ var Lst = db.ExcuteStoreProcedure<spPlayVideo>(LstSqlParameter).ToList();

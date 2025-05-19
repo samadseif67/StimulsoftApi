@@ -1,0 +1,53 @@
+ #region HashAndVerifyPass
+
+ public class TemplateHashAndSaltPassDto
+ {
+     public byte[] HashPass { get; set; }
+     public byte[] SaltPass { get; set; }
+ }
+
+
+ public TemplateHashAndSaltPassDto HashPass(string Pass)
+ {
+     TemplateHashAndSaltPassDto Result = new TemplateHashAndSaltPassDto();
+     System.Security.Cryptography.HMACSHA512 Hmac = new System.Security.Cryptography.HMACSHA512();
+     byte[] SaltPass = Hmac.Key;
+     byte[] HashPass = Hmac.ComputeHash(Encoding.UTF8.GetBytes(Pass));
+     Result.SaltPass = SaltPass;
+     Result.HashPass = HashPass;
+     return Result;
+ }
+
+ public bool VerifyPass(string Pass, byte[] Saltpass, byte[] Hashpass)
+ {
+     bool Result = true;
+     System.Security.Cryptography.HMACSHA512 Hmac = new System.Security.Cryptography.HMACSHA512(Saltpass);
+     byte[] _HashPass = Hmac.ComputeHash(Encoding.UTF8.GetBytes(Pass));
+
+     for (int i = 0; i < _HashPass.Length; i++)
+     {
+         if (_HashPass[i] != Hashpass[i])
+         {
+             Result = false;
+             break;
+         }
+     }
+
+     if (Result)
+     {
+         for (int i = 0; i < Hashpass.Length; i++)
+         {
+             if (_HashPass[i] != Hashpass[i])
+             {
+                 Result = false;
+                 break;
+             }
+         }
+     }
+
+     return Result;
+
+
+ }
+
+ #endregion HashAndVerifyPass

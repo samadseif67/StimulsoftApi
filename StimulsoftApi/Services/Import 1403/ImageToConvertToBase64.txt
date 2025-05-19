@@ -1,0 +1,12 @@
+  #region ImageToConvertToBase64
+  public string ImageToConvertToBase64(byte[] ImageFile)
+  {
+      string Result = "";
+      if (ImageFile != null)
+      {
+          string base64ImageRepresentation = Convert.ToBase64String(ImageFile);
+          Result = "data:image/gif;base64," + base64ImageRepresentation;
+      }
+      return Result;
+  }
+  #endregion ImageToConvertToBase64

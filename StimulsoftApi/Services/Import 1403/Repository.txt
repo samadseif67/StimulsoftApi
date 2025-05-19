@@ -1,0 +1,155 @@
+public interface IRepository<TEntity> where TEntity : class
+{
+
+    #region Normal
+    TEntity Add(TEntity entity);
+    bool Any(Expression<Func<TEntity, bool>> where);
+    TEntity Find(Expression<Func<TEntity, bool>> where);
+    IEnumerable<TEntity> Where(Expression<Func<TEntity, bool>> where);
+    Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<TEntity, TProperty> Include<TProperty>(Expression<Func<TEntity, TProperty>> where);
+    IQueryable<TEntity> Include(string TableName);
+
+    #endregion Normal
+
+
+    #region Async
+
+    Task<TEntity> AddAsync(TEntity entity);
+    Task<bool> AnyAsync(Expression<Func<TEntity, bool>> where);
+    Task<TEntity> FindAsync(Expression<Func<TEntity, bool>> where);
+    Task<IEnumerable<TEntity>> WhereAsync(Expression<Func<TEntity, bool>> where);
+
+    Task<TEntity> MaxAsync();
+
+    #endregion Async
+
+ 
+}
+
+
+
+ public class Repository<TEntity> : IDisposable, IRepository<TEntity> where TEntity : class
+ {
+
+     private readonly DbContext db;
+     private readonly DbSet<TEntity> dbset;
+
+     public Repository(DbContext _db)
+     {
+         db = _db;
+         dbset = db.Set<TEntity>();
+
+     }
+
+     #region Normal
+     public TEntity Add(TEntity entity)
+     {
+         dbset.Add(entity);
+         return entity;
+     }
+
+     public bool Any(Expression<Func<TEntity, bool>> where)
+     {
+         return dbset.Any(where);
+     }
+
+     public TEntity Find(Expression<Func<TEntity, bool>> where)
+     {
+         return dbset.FirstOrDefault(where);
+     }
+
+     public IEnumerable<TEntity> Where(Expression<Func<TEntity, bool>> where)
+     {
+         return dbset.Where(where);
+     }
+
+
+     public Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<TEntity, TProperty> Include<TProperty>(Expression<Func<TEntity, TProperty>> where)
+     {
+
+
+         Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<TEntity, TProperty> Result = dbset.Include(where);
+         Result = Result.Include(where);
+         return Result;
+     }
+
+
+
+     public IQueryable<TEntity> Include(string TableName)
+     {
+         //TableName Car
+         //Two Tablename  Car.gender
+         foreach (var item in TableName.Split("."))
+         {
+             dbset.Include(item);
+         }
+         return dbset;
+     }
+
+
+     #endregion Normal
+
+
+
+     #region Async
+     public async Task<TEntity> AddAsync(TEntity entity)
+     {
+         await dbset.AddAsync(entity);
+         return entity;
+     }
+
+     public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>> where)
+     {
+         return await dbset.AnyAsync(where);
+     }
+
+     public async Task<TEntity> FindAsync(Expression<Func<TEntity, bool>> where)
+     {
+         return await dbset.FirstOrDefaultAsync(where);
+     }
+
+     public async Task<IEnumerable<TEntity>> WhereAsync(Expression<Func<TEntity, bool>> where)
+     {
+         return await dbset.Where(where).ToListAsync();
+     }
+
+
+     public async Task<TEntity> MaxAsync()
+     {
+         TEntity Result = await dbset.MaxAsync();
+         return Result;
+     }
+
+
+     #endregion Async
+
+     
+
+
+     #region Dispose
+
+     private bool disposed = false;
+
+     protected virtual void Dispose(bool disposing)
+     {
+         if (!this.disposed)
+         {
+             if (disposing)
+             {
+                 db.Dispose();
+             }
+         }
+         this.disposed = true;
+     }
+
+     public void Dispose()
+     {
+         Dispose(true);
+         GC.SuppressFinalize(this);
+     }
+
+
+     #endregion Dispose
+
+
+ }

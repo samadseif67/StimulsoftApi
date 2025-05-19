@@ -1,0 +1,83 @@
+public class ItemValidation
+{
+    public string ID { get; set; }
+    public string Title { get; set; }
+}
+
+public bool ValidationModalLst<T>(List<T> LstObjectName, List<string> LstClumnsImporttant = null, bool ForceLstClumnsImporttant = false, List<string> LstClumnsNotImporttant = null)
+{
+    bool Result = false;
+    foreach (var item in LstObjectName)
+    {
+        Result = ValidationModal(item, LstClumnsImporttant, ForceLstClumnsImporttant, LstClumnsNotImporttant);
+        if (Result)
+        {
+            break;
+        }
+    }
+    return Result;
+}
+
+public bool ValidationModal(object ObjectName, List<string> LstClumnsImporttant = null, bool ForceLstClumnsImporttant = false, List<string> LstClumnsNotImporttant = null)
+{
+
+    //LstClumnsImporttant تمام فیلد های ضروری
+    //ForceLstClumnsImporttant در صورتی که تمام فیلدها ضروری هستند کافی است که فیلد بالا را خالی و این فیلد را برابر یک قرار بدهید
+
+    List<ItemValidation> itemValidations = new List<ItemValidation>();
+
+
+
+    bool Result = false;
+    foreach (var x in ObjectName.GetType().GetProperties())
+    {
+        var name = x.Name.Trim();
+        var Value = Convert.ToString(x.GetValue(ObjectName)).Trim();
+        var FindValidation = itemValidations.FirstOrDefault(m => m.ID == name);
+        if (FindValidation == null)
+        {
+            itemValidations.Add(new ItemValidation() { ID = name, Title = Value });
+        }
+        else
+        {
+            FindValidation.Title = Value.Length == 0 ? FindValidation.Title : Value;
+        }
+    }
+
+    //********************************************************************************************************************************************
+
+    if (LstClumnsImporttant != null && Result == false)
+    {
+        var FindValidateImportant = itemValidations.Where(x => LstClumnsImporttant.Contains(x.ID) && x.Title.Trim().Length == 0).ToList();
+        if (FindValidateImportant.Count() != 0)
+        {
+            Result = true;
+        }
+    }
+
+    //********************************************************************************************************************************************
+
+    if (LstClumnsNotImporttant != null && Result == false)
+    {
+        var FindFromValid = itemValidations.Where(x => !LstClumnsNotImporttant.Contains(x.ID) && x.Title.Trim().Length == 0).ToList();
+        if (FindFromValid.Count() != 0)
+        {
+            Result = true;
+        }
+    }
+
+    //*********************************************************************************************************************************************
+
+    if (LstClumnsImporttant == null && ForceLstClumnsImporttant == true)
+    {
+        var FindValidateImportantForce = itemValidations.Where(x => x.Title.Trim().Length == 0).ToList();
+        if (FindValidateImportantForce.Count() != 0)
+        {
+            Result = true;
+        }
+    }
+
+    //**********************************************************************************************************************************************
+
+    return Result;
+}

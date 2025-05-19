@@ -1,0 +1,14 @@
+  public interface IUserRepository : IRepository<User>
+  {
+
+  }
+
+ public class UserRepository : Repository<User>, IUserRepository
+ {
+     private readonly DbContext db;
+     public UserRepository(DbContext _db) : base(_db)
+     {
+         db = db ?? (VideoManagementsContext)db;
+     }
+
+ }
