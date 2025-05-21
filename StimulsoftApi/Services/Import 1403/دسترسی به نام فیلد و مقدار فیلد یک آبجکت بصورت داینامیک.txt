@@ -1,0 +1,25 @@
+foreach (var property in yourObject.GetType().GetProperties())
+{
+    string propertyName = property.Name;
+    object propertyValue = property.GetValue(yourObject);
+    
+    // استفاده از نام و مقدار property
+    Console.WriteLine($"{propertyName}: {propertyValue}");
+}
+
+
+
+//*****************************************************
+اگر مدل شما از نوع dynamic است:
+if (yourObject is ExpandoObject expando)
+{
+    foreach (var property in expando)
+    {
+        string propertyName = property.Key;
+        object propertyValue = property.Value;
+        
+        // استفاده از نام و مقدار
+    }
+}
+
+//****************************************************
