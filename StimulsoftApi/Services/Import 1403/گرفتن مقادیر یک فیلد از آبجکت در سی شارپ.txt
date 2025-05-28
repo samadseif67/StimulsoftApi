@@ -1,0 +1,8 @@
+public void Test1(object data)
+{
+
+var TypeFiled=data.GetType().GetPropperty("Title").GetType();
+var ValueFiled=data.GetType().GetPropperty("Title").GetValue(data,null);
+
+
+}
