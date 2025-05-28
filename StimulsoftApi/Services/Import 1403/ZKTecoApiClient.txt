@@ -1,0 +1,53 @@
+GET /ISAPI/DeviceConfig/DeviceInformation
+GET /ISAPI/AccessControl/AcsEventLog?format=json
+POST /ISAPI/AccessControl/CaptureFingerData   درخواست گرفتن اثر انگشت بدهید:
+
+
+using System.Net.Http.Headers;
+using System.Text;
+
+public class ZKTecoApiClient
+{
+    private readonly HttpClient _client;
+
+    public ZKTecoApiClient(string ipAddress, string username, string password)
+    {
+        var handler = new HttpClientHandler()
+        {
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+        };
+
+        _client = new HttpClient(handler)
+        {
+            BaseAddress = new Uri($"https://{ipAddress}")
+        };
+
+        var authToken = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}"));
+        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authToken);
+    }
+
+    public async Task<string> GetDeviceInfoAsync()
+    {
+        var response = await _client.GetAsync("/ISAPI/DeviceConfig/DeviceInformation");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync();
+    }
+
+    public async Task<JObject> GetUserListAsync()
+    {
+        var response = await _client.GetAsync("/ISAPI/AccessControl/UserInfo/Detail?format=json");
+        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadAsStringAsync();
+        return JObject.Parse(content);
+    }
+}
+
+
+
+var apiClient = new ZKTecoApiClient("192.168.1.201", "admin", "admin");
+
+var deviceInfo = await apiClient.GetDeviceInfoAsync();
+Console.WriteLine(deviceInfo);
+
+var users = await apiClient.GetUserListAsync();
+Console.WriteLine(users.ToString());

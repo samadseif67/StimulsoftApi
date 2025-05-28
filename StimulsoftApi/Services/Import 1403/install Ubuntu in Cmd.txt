@@ -1,0 +1,4 @@
+wsl --install
+wsl --install -d Ubuntu
+
+از منوی استارت → Ubuntu را اجرا کنید
