@@ -1,0 +1,14 @@
+           string fullClassName = "UserRepository";
+         
+
+
+
+            //Execute_Dynamic_ActionService  نام پروژه می باشد
+
+            Assembly targetAssembly = Assembly.Load("Execute_Dynamic_ActionService");
+            Type foundType = targetAssembly.GetTypes().FirstOrDefault(t => t.Name == fullClassName);
+            string namespaceName = foundType.Namespace;
+            fullClassName = namespaceName + "." + fullClassName + ", Execute_Dynamic_ActionService";
+
+
+            Type type = Type.GetType(fullClassName);

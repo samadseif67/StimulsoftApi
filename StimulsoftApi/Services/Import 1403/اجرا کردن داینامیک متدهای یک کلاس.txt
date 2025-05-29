@@ -1,0 +1,33 @@
+    public ActionResult InvokeMethod()
+        {
+            string fullClassName = "UserRepository";
+            string methodName = "GetName";
+
+
+
+            //Execute_Dynamic_ActionService  نام پروژه می باشد
+
+            Assembly targetAssembly = Assembly.Load("Execute_Dynamic_ActionService");
+            Type foundType = targetAssembly.GetTypes().FirstOrDefault(t => t.Name == fullClassName);
+            string namespaceName = foundType.Namespace;
+            fullClassName = namespaceName + "." + fullClassName + ", Execute_Dynamic_ActionService";
+
+
+            Type type = Type.GetType(fullClassName);
+            if (type == null)
+                throw new Exception($"کلاس '{fullClassName}' یافت نشد.");
+
+            // 2. متد مورد نظر را پیدا کن
+            MethodInfo methodInfo = type.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance);
+            if (methodInfo == null)
+                throw new Exception($"متود '{methodName}' در کلاس '{fullClassName}' یافت نشد.");
+
+            // 3. یک نمونه از کلاس بساز
+            object instance = Activator.CreateInstance(type);
+
+            // 4. متد را فراخوانی کن (بدون پارامتر)
+            object result = methodInfo.Invoke(instance, null);
+
+
+            return Ok(result);
+        }

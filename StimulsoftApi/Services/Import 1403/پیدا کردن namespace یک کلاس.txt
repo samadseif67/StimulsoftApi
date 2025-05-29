@@ -1,0 +1,18 @@
+//در این قسمت نام کلاس را مستقیما وارد میکنیم
+
+            Type type = typeof(MyJobs);
+            string namespaceName = type.Namespace;
+            return Ok(namespaceName);
+
+
+//***********************************************************************************************
+//در این قسمت نام کلاس بصورت رشته ای وارد میکنیم
+
+            string className = "MyJobs";
+            Assembly targetAssembly = Assembly.Load("HangFire_App");
+            Type foundType = targetAssembly.GetTypes().FirstOrDefault(t => t.Name == className);
+            string namespaceName = foundType.Namespace;
+
+
+
+//*************************************************************************************************
