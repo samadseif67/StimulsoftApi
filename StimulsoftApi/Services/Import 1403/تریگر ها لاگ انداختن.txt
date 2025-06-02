@@ -1,0 +1,38 @@
+ 
+create TRIGGER [dbo].[LawsuitBranchesOfProceedingsUpdateHistory]
+   ON   [dbo].[LawsuitBranchesOfProceedings]
+   AFTER  Update
+AS 
+BEGIN
+declare @RowID int,
+ @MemberID int,
+  @IsDelete bit,
+  @TableID int,
+  @ChangeTypeID int
+  select @TableID=ID   from kht.TableName where Name ='LawsuitBranchesOfProceedings'
+	select @RowID = ins.ID, @IsDelete=IsDelete,@MemberID=MemberID from inserted ins
+	 set @ChangeTypeID = case when @IsDelete = 0 then 2 else 3 end
+	insert into ChangeHistories(TableNameID,RowID,ChangeTypeID,MemberID,ChangeDate,OldData,NewData)	
+	values(@TableID ,@RowID,@ChangeTypeID,@MemberID,GETDATE(),(select  * from deleted   for json auto),(select  * from inserted   for json auto))
+END
+
+
+
+
+
+ 
+create TRIGGER [dbo].[LawsuitBranchesOfProceedingsInsertHistory]
+   ON   [dbo].[LawsuitBranchesOfProceedings]
+   AFTER  INSERT
+AS 
+BEGIN
+declare @RowID int,
+ @MemberID int,
+  @IsDelete bit,
+  @TableID int
+  select @TableID=ID   from kht.TableName where Name ='LawsuitBranchesOfProceedings'
+	select @RowID = ins.ID, @IsDelete=IsDelete,@MemberID=MemberID from inserted ins
+
+	insert into ChangeHistories(TableNameID,RowID,ChangeTypeID,MemberID,ChangeDate)
+	values(@TableID ,@RowID,1,@MemberID,GETDATE())
+END

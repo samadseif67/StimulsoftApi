@@ -1,0 +1,190 @@
+using ReducImage.Models;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+
+namespace ReducImage.Controllers
+{
+    public class HomeController : Controller
+    {
+        AmvalPicEntities Context = new AmvalPicEntities();
+
+
+        public class ItemFile
+        {
+            public int ID { get; set; }
+
+            public byte[] FileByteOrginal { get; set; }
+            public string Base64Orginal { get; set; }
+            public long SizeFileOrginal { get; set; }
+
+
+
+            public byte[] FileByteFake { get; set; }
+            public string Base64Fake { get; set; }
+            public long SizeFileFake { get; set; }
+
+
+
+        }
+       
+        public ActionResult Index()
+        {  
+            return View();
+             
+        }
+
+
+
+        #region One
+        public static byte[] CreateThumbnail(byte[] PassedImage, int LargestSide)
+        {
+            byte[] ReturnedThumbnail;
+
+            using (MemoryStream StartMemoryStream = new MemoryStream(),
+                                NewMemoryStream = new MemoryStream())
+            {
+                // write the string to the stream  
+                StartMemoryStream.Write(PassedImage, 0, PassedImage.Length);
+
+                // create the start Bitmap from the MemoryStream that contains the image  
+                Bitmap startBitmap = new Bitmap(StartMemoryStream);
+
+                // set thumbnail height and width proportional to the original image.  
+                int newHeight;
+                int newWidth;
+                double HW_ratio;
+                if (startBitmap.Height > startBitmap.Width)
+                {
+                    newHeight = LargestSide;
+                    HW_ratio = (double)((double)LargestSide / (double)startBitmap.Height);
+                    newWidth = (int)(HW_ratio * (double)startBitmap.Width);
+                }
+                else
+                {
+                    newWidth = LargestSide;
+                    HW_ratio = (double)((double)LargestSide / (double)startBitmap.Width);
+                    newHeight = (int)(HW_ratio * (double)startBitmap.Height);
+                }
+
+                // create a new Bitmap with dimensions for the thumbnail.  
+                Bitmap newBitmap = new Bitmap(newWidth, newHeight);
+
+                // Copy the image from the START Bitmap into the NEW Bitmap.  
+                // This will create a thumnail size of the same image.  
+                newBitmap = ResizeImage(startBitmap, newWidth, newHeight);
+
+                // Save this image to the specified stream in the specified format.  
+                newBitmap.Save(NewMemoryStream, System.Drawing.Imaging.ImageFormat.Jpeg);
+
+                // Fill the byte[] for the thumbnail from the new MemoryStream.  
+                ReturnedThumbnail = NewMemoryStream.ToArray();
+            }
+
+            // return the resized image as a string of bytes.  
+            return ReturnedThumbnail;
+        }
+        private static Bitmap ResizeImage(Bitmap image, int width, int height)
+        {
+            Bitmap resizedImage = new Bitmap(width, height);
+            using (Graphics gfx = Graphics.FromImage(resizedImage))
+            {
+                gfx.DrawImage(image, new Rectangle(0, 0, width, height),
+                    new Rectangle(0, 0, image.Width, image.Height), GraphicsUnit.Pixel);
+            }
+            return resizedImage;
+        }
+
+        #endregion One
+
+
+
+        #region Two
+
+        public ActionResult LoadReducImage()
+        {
+            List<ItemFile> Lst = new List<ItemFile>();
+            var AllFile = Context.Tbl_Image.Where(x=>x.ID==29).Select(x => new { x.Pic, x.ID }).ToList().Where(x => x.Pic.LongLength > 512000).Select(x => new { x.ID, LongLength = x.Pic.LongLength, x.Pic }).ToList();
+            foreach (var item in AllFile)
+            {
+                byte[] ResultFile = null;
+
+                for (int i = 100; i > 0; i--)
+                {
+                    ResultFile = CompressByImageAlg(i, item.Pic);
+                    if (ResultFile.Length < 512000)
+                        break;
+                }
+
+                Lst.Add(new ItemFile()
+                {
+                    ID = item.ID,
+                    FileByteOrginal = item.Pic,
+                    FileByteFake = ResultFile,
+                    Base64Orginal = ConvertToBase64Image(item.Pic),
+                    SizeFileOrginal=item.Pic.LongLength,
+                    Base64Fake= ConvertToBase64Image(ResultFile),
+                    SizeFileFake= ResultFile.LongLength,
+                });
+            }
+
+
+
+            var LstImage = Lst.Select(x => new { x.ID, x.Base64Fake, x.Base64Orginal,x.SizeFileFake,x.SizeFileOrginal }).ToList();
+            var data = new
+            {
+                LstImage= LstImage,
+            };
+
+            var DataJson = new JsonResult
+            {
+                Data= data,
+                MaxJsonLength=int.MaxValue,
+                JsonRequestBehavior=JsonRequestBehavior.AllowGet
+            };
+
+
+
+            return DataJson;
+        }
+
+        static byte[] CompressByImageAlg(int jpegQuality, byte[] data)
+        {
+            using (MemoryStream inputStream = new MemoryStream(data))
+            {
+                using (Image image = Image.FromStream(inputStream))
+                {
+                    ImageCodecInfo jpegEncoder = ImageCodecInfo.GetImageDecoders()
+                        .First(c => c.FormatID == ImageFormat.Jpeg.Guid);
+                    var encoderParameters = new EncoderParameters(1);
+                    encoderParameters.Param[0] = new EncoderParameter(Encoder.Quality, jpegQuality);
+                    byte[] outputBytes = null;
+                    using (MemoryStream outputStream = new MemoryStream())
+                    {
+                        image.Save(outputStream, jpegEncoder, encoderParameters);
+                        return outputStream.ToArray();
+                    }
+                }
+            }
+        }
+
+        public string ConvertToBase64Image(byte[] bytes)
+        {
+            string   base64String = Convert.ToBase64String(bytes, 0, bytes.Length);
+            string   ImageUrl = "data:image/png;base64," + base64String;
+            return   ImageUrl;
+        }
+            
+            
+         #endregion Two
+
+
+
+
+    }
+}

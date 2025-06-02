@@ -1,0 +1,13 @@
+ <sessionState timeout="120" />
+
+
+
+ <system.web>
+    <compilation debug="true" targetFramework="4.7.2" />
+    <httpRuntime targetFramework="4.7.2" />
+    <customErrors mode="Off" defaultRedirect="~/Views/Shared/Error.cshtml" />
+    <authentication mode="Forms">
+      <forms loginUrl="/Home/Login" timeout="28800" />
+    </authentication>
+   <sessionState timeout="120" />
+  </system.web>

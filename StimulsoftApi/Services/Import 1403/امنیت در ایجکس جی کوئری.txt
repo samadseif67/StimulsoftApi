@@ -1,0 +1,48 @@
+    <div class="mx-auto">
+        @Html.AntiForgeryToken()
+        <input type="button" value="ثبت 1" onclick="FuncTest();" />       
+    </div>
+
+   
+<script>
+    function FuncTest() {
+
+        var Person = [];
+        Person.push({ "ID": 1, "Title": "علی محمدی" });
+        Person.push({ "ID": 2, "Title": "رضا ناصری" });
+
+        $.ajax({
+            url: "/Home/Test",
+            data: AddAntiForgeryToken({ ID: 10, Person: Person }),         
+            type: "post",
+            datatype: "json",
+            success: function (data)
+            {
+                alert(data);
+            }
+        })
+
+
+
+    }
+
+    AddAntiForgeryToken = function (data) {
+        data.__RequestVerificationToken = $('input[name=__RequestVerificationToken]').val();
+        return data;
+    };
+
+</script>
+
+//*********************************************************************************************
+
+     public class ItemCombo
+        {
+            public int ID { get; set; }
+            public string Title { get; set; }
+        }
+
+        [ValidateAntiForgeryToken]
+        public ActionResult Test(int ID=0,List<ItemCombo> Person=null)
+        {
+            return Json(ID);
+        }

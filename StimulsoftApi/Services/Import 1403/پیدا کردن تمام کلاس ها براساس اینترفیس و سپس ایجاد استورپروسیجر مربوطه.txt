@@ -1,0 +1,56 @@
+   public void CreateStoredProcedures()
+   {
+       // بررسی وجود procedure و ایجاد در صورت عدم وجود
+       try
+       {
+           using (var command = Database.GetDbConnection().CreateCommand())
+           {
+
+               string procedureName = "SPBlockList";
+               string shemaName = "Gen";
+               string tableName = "componyperson";
+
+
+               var externalAssemblys = Assembly.Load("ModelsCore").GetTypes().Where(x => x.IsClass && typeof(IBaseSp).IsAssignableFrom(x)).ToList();
+               foreach (var externalAssembly in externalAssemblys)
+               {
+                   shemaName = externalAssembly.CustomAttributes.Select(x => x.NamedArguments[0]).FirstOrDefault().TypedValue.Value.ToString();
+                   tableName = externalAssembly.CustomAttributes.Select(x => x.ConstructorArguments[0]).FirstOrDefault().Value.ToString();
+                   procedureName = $"SP{tableName}List";
+
+
+
+                   command.CommandText = @"
+                                           SELECT CASE WHEN EXISTS (
+                                           SELECT * FROM sys.objects 
+                                           WHERE type = 'P' AND name = @procedureName
+                                           ) THEN 1 ELSE 0 END";
+
+                   var parameter = command.CreateParameter();
+                   parameter.ParameterName = "@procedureName";
+                   parameter.Value = procedureName;
+                   command.Parameters.Add(parameter);
+
+
+                   command.Connection.Open();
+
+                   bool procedureExists = (int)command.ExecuteScalar() == 1;
+                   if (!procedureExists)
+                   {
+                       var textSqlProdure = $"create PROCEDURE [dbo].[{procedureName}] \r\n\t-- Add the parameters for the stored procedure here\r\n\t@Rows varchar(3),\r\n\t@Page varchar(4) ,\r\n\t@Where nvarchar(250),\r\n\t@SortName nvarchar(250),\r\n\t@SortOrder nvarchar(250),\r\n\t@ExportToExcel bit\r\n\r\nAS\r\nBEGIN\r\n\tif @Rows = '' or @Rows is null\r\n\t\tset @Rows = '10';\r\n\r\n\tif @Page = '' or @Page is null\r\n\t\tset @Page = '1';\r\n\r\n\tif  @Where = '' or @Where is null\r\n\t\tset @Where = '';\r\n\r\n\tif @SortName = '' or @SortName is null\r\n\t\tset @SortName = 'Code';\r\n\r\n\tif @SortOrder = '' or @SortOrder is null\r\n\t\tset @SortOrder = 'desc';\r\n\r\ndeclare @skip varchar(4) =   ( CONVERT(int,@Rows) *   CONVERT(varchar,@Page)) -   CONVERT(varchar,@Rows)\r\n\r\ndeclare @queryMain nvarchar(max)\r\n\r\n\r\n\r\nset @queryMain ='select * from {shemaName}.{tableName} '\r\n\r\n\r\ndeclare @query nvarchar(max) ;\r\n\r\nset @query = 'select * from ('+@queryMain+')u ' + @Where + ' order by ' + @			SortName + ' ' + @SortOrder  + IIF(@ExportToExcel = 1 ,'' ,' OFFSET '+ @skip +' ROWS FETCH NEXT '+ @Rows+' ROWS ONLY')\r\nexec sp_executesql @query\r\n\r\ndeclare @queryCount nvarchar(max) ;\r\n\r\nset @queryCount = 'select count(ID) from ('+@queryMain+')u ' + @Where\r\n\r\nexec sp_executesql @queryCount\r\n\r\nEND";
+                       Database.ExecuteSqlRaw(textSqlProdure);
+                   }
+                   command.Parameters.Remove(parameter);
+                   command.Connection.Close();
+
+               }
+
+           }
+
+       }
+       catch (Exception ex)
+       {
+
+           Console.WriteLine(ex.Message);
+       }
+   }

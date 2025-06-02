@@ -1,0 +1,71 @@
+
+    public ActionResult ConvertTextToWordWithOut(string StrText = "")
+        {
+            int MemberID = Convert.ToInt32(Session["MembershipID"]);
+            string Rnd = Convert.ToString(new Random(Guid.NewGuid().GetHashCode()).Next()) + "" + Convert.ToString(MemberID) + ".doc";
+            var GetFile = HtmlToWord(StrText, Rnd);
+
+
+            string Result = "data:application/msword;base64," + (GetFile);
+
+            // return File(GetFile, "application/msword", Rnd);
+            return Json(Result, JsonRequestBehavior.AllowGet);
+        }
+
+ 
+
+   [NonAction]
+        public byte[] HtmlToWord(string StrHtml = "", string FileName = "")
+        {
+            var strBody = new System.Text.StringBuilder();
+
+            strBody.Append("<html " +
+             "xmlns:o='urn:schemas-microsoft-com:office:office' " +
+             "xmlns:w='urn:schemas-microsoft-com:office:word'" +
+              "xmlns='http://www.w3.org/TR/REC-html40'>" +
+              "<head><title>Time</title>");
+
+            //The setting specifies document's view after it is downloaded as Print
+            //instead of the default Web Layout
+            strBody.Append("<!--[if gte mso 9]>" +
+             "<xml>" +
+             "<w:WordDocument>" +
+             "<w:View>Print</w:View>" +
+             "<w:Zoom>90</w:Zoom>" +
+             "<w:DoNotOptimizeForBrowser/>" +
+             "</w:WordDocument>" +
+             "</xml>" +
+             "<![endif]-->");
+
+            strBody.Append("<style>" +
+             "<!-- /* Style Definitions */" +
+             "@page Section1" +
+             "   {size:8.5in 11.0in; " +
+             "   margin:1.0in 1.25in 1.0in 1.25in ; " +
+             "   mso-header-margin:.5in; " +
+              "   mso-float:right; " +
+              "   mso-direction:rtl; " +
+
+
+             "   mso-footer-margin:.5in; mso-paper-source:0;}" +
+             " div.Section1" +
+             "   {page:Section1;}" +
+             "-->" +
+             "</style></head>");
+
+            strBody.Append("<body   style='tab-interval:.5in'>" +
+             "<div class=Section1    style='float:right;direction:rtl;font-family:B Nazanin;text-align: justify;'   >");
+            strBody.Append(StrHtml);
+            strBody.Append("</div></body></html>");
+
+            byte[] FileToByte = null;
+            System.IO.File.WriteAllText(Server.MapPath("../ConvertFile/" + FileName), strBody.ToString(), System.Text.Encoding.UTF8);
+
+            FileToByte = System.IO.File.ReadAllBytes(Server.MapPath("../ConvertFile/" + FileName));
+
+            System.IO.File.Delete(Server.MapPath("../ConvertFile/" + FileName));
+
+            return FileToByte;
+
+
+        }

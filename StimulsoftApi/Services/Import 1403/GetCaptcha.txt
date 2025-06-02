@@ -1,0 +1,47 @@
+   #region CreateCaptcha
+   [AllowAnonymous]
+   [ValidateAntiForgeryToken]
+   public ActionResult GetCaptcha()
+   {
+       Random random = new Random();
+       string randomText = Convert.ToString(new Random().Next(0, 9999));
+
+       string firstText = randomText;
+       PointF firstLocation = new PointF(10f, 10f);
+       //PointF secondLocation = new PointF(10f, 50f);
+       //string imageFilePath = Server.MapPath("../Content/image/CaptchaBackground.jpg");
+
+       string wwwPath = this.Environment.WebRootPath;
+       string contentPath = this.Environment.ContentRootPath;
+       string imageFilePath = Path.Combine(this.Environment.WebRootPath, "Images/CaptchaBackground.png");
+       Bitmap bitmap = (Bitmap)System.Drawing.Image.FromFile(imageFilePath);
+       using (Graphics graphics = Graphics.FromImage(bitmap))
+       {
+           using (System.Drawing.Font arialFont = new System.Drawing.Font("SketchFlow Print", 70))
+           {
+               graphics.DrawString(firstText, arialFont, Brushes.Black, firstLocation);
+           }
+       }
+       MemoryStream ms = new MemoryStream();
+       bitmap.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+
+       byte[] imageBytes = ms.ToArray();
+       string image = Convert.ToBase64String(imageBytes);
+
+       image = "data:image/png;base64," + image;
+
+       //Session["CaptchaCode"] = randomText;
+
+       HttpContext.Session.SetString("CaptchaCode", randomText);
+
+
+       var result = new
+       {
+           randomText = randomText,
+           image = image
+       };
+
+       return Json(result);
+   }
+
+   #endregion CreateCaptcha

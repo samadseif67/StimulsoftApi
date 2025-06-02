@@ -1,0 +1,84 @@
+   public class mySQL
+   {
+       private readonly IranolEntities db = new IranolEntities();
+       private readonly SqlConnection connection;
+       private SqlDataReader dataReader;
+
+       public mySQL()
+       {
+           connection = new SqlConnection(db.Database.Connection.ConnectionString);
+       }
+
+       public string myGetConnectionString()
+       {
+           return db.Database.Connection.ConnectionString;
+       }
+
+       public DataTable myGetDataTable(string query)
+       {
+           if (connection.State == ConnectionState.Open)
+               connection.Close();
+           connection.Open();
+           var dataAdapter = new SqlDataAdapter(query, connection);
+           var dataTable = new DataTable();
+           dataAdapter.Fill(dataTable);
+           dataAdapter.Dispose();
+           connection.Close();
+           return dataTable;
+       }
+
+       public int myExecuteCommand(string query)
+       {
+           int result;
+           try
+           {
+               if (connection.State == ConnectionState.Open)
+                   connection.Close();
+               connection.Open();
+               SqlCommand command = new SqlCommand(query, connection);
+               result = command.ExecuteNonQuery();
+               command.Dispose();
+               connection.Close();
+           }
+           catch (Exception ex)
+           {
+               result = ex.HResult;
+           }
+
+           return result;
+       }
+
+       public int myExecuteCommand(string query, CommandType commandType)
+       {
+           if (connection.State == ConnectionState.Open)
+               connection.Close();
+           connection.Open();
+           SqlCommand command = new SqlCommand(query, connection)
+           {
+               CommandType = commandType
+           };
+           var result = command.ExecuteNonQuery();
+           command.Dispose();
+           connection.Close();
+
+           return result;
+       }
+
+       public string myGetFiled(string query)
+       {
+           var strFiled = string.Empty;
+           if (connection.State == ConnectionState.Open)
+               connection.Close();
+           connection.Open();
+           var command = new SqlCommand(query, connection);
+           dataReader = command.ExecuteReader();
+           if (dataReader.HasRows)
+           {
+               dataReader.Read();
+               strFiled = dataReader[0].ToString();
+           }
+           command.Dispose();
+           connection.Close();
+           return strFiled;
+       }
+   }

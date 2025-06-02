@@ -1,0 +1,23 @@
+ public class WebsiteUrlMiddleware
+ {
+     private readonly RequestDelegate _next;
+     private readonly IWebsiteUrlStore _WebsiteUrlStore;
+
+     public WebsiteUrlMiddleware(RequestDelegate next, IWebsiteUrlStore WebsiteUrlStore)
+     {
+         _next = next;
+         _WebsiteUrlStore = WebsiteUrlStore;
+     }
+
+     public async Task InvokeAsync(HttpContext context)
+     {
+         var url = $"{context.Request.Scheme}//{context.Request.Host}";
+        _WebsiteUrlStore.SetWebsiteUrl(url);
+         await _next(context);
+     }
+ }
+
+
+
+
+app.UseMiddleware<WebsiteUrlMiddleware>();

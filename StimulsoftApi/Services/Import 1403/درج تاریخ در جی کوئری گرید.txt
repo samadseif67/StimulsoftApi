@@ -1,0 +1,20 @@
+
+
+    SetDateTimeForPage_DivThatHaveDatetime();//تاریخ
+
+
+
+ {
+                        name: "BPF_Date", index: "BPF_Date", width: 90, align: "right", editable: true, hidden: false, editoptions: {
+                            dataInit: function (el) {
+                                $(el).datepicker({ dateFormat: 'yy/mm/dd' });
+                            },
+                            style: "width: 100px",
+                            dataEvents: [{
+                                type: "keypress",
+                                fn: function (e) {
+
+                                }
+                            }]
+                        }
+                    },

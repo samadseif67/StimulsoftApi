@@ -1,0 +1,6 @@
+    unicode-bidi: bidi-override;
+    direction: ltr;
+    text-align: left !important;
+
+
+ 

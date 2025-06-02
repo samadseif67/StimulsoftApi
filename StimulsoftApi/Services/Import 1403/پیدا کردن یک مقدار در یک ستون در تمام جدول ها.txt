@@ -1,0 +1,28 @@
+ 
+create proc [dbo].[spFindValueInAllTableByClumns]
+ @memberID int = 1
+ as
+ declare
+ @result nvarchar(500),
+ @i int=0
+ , @Count INT 
+ , @TableName nvarchar(100)
+ declare  @tblone table (TableName nvarchar(100), RecordCount int)
+ declare cu cursor for
+	select concat('select @Count = Count(ID), @TableName = ''', t.name, '''  from ' ,SCHEMA_NAME(t.schema_id ), '.', t.name ,' where memberID = ', @memberID) Tbl 
+			from sys.tables t left outer join sys.columns c on t.object_id = c.object_id
+			where c.name = 'MemberID'
+open cu
+fetch from cu into @result
+while @@FETCH_STATUS = 0 begin
+	exec sp_executesql @result, N'@TableName nvarchar(100) OUTPUT, @Count INT OUTPUT', @TableName = @TableName OUTPUT, @Count = @Count OUTPUT 
+	insert into @tblone
+	select @TableName, @Count
+
+	fetch from cu into @result
+end
+close cu
+deallocate cu
+
+select * from @tblone
+ 

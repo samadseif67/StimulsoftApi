@@ -1,0 +1,171 @@
+     [DisableRequestSizeLimit]
+     public async Task<ActionResult> SaveUploadFileVideos(IFormFile FileContent, string Descriptions = "")
+     {
+         try
+         {
+
+             int PageID = 6;
+             int MyUserID = GetMyUserID();
+             int MyRoleID = await UserService.GetRoleIDByUserID(MyUserID);
+
+
+             //**********************************************************************************************************************************
+
+
+
+
+
+
+
+
+             //************************************************************************************************************************************
+
+             //فقط افرادی که قوانین را پذیرفته اند بتواند فایل آپلود کنند
+             #region GetAcceptedRulesByUser
+             bool IsAcceptedRules = await PublicServiceRepository.GetAcceptedRulesByUserID(MyUserID);
+             if (!IsAcceptedRules)
+             {
+                 return Json(-3);// //فقط افرادی که قوانین را پذیرفته اند میتوانند فایل آپلود کنند
+             }
+
+             #endregion GetAcceptedRulesByUser
+             //************************************************************************************************************************************
+
+             //در صورتی امکان بارگذاری فایل برای بار دوم به بالا وجود داشته باشد که رکورد قبل آنرد شده باشد
+             //در صورتی که یکی از نظرات تائید نشده باشد امکان آپلود فایل وجود داشته باشد د غیر اینصورت امکان آپلود فایل وجود نداشته باشد
+
+             #region ISOpinion
+
+             bool IsOpinion = (await PublicServiceRepository.IsTechnicalReviewerOpinionAndContentReviewerOpinionAndLegalReviewerOpinionAsync(MyUserID, 0)).IsResult;
+             if (IsOpinion == false)
+             {
+                 return Json(-4);//امکان آپلود فایل وجود ندارد 
+             }
+
+             #endregion ISOpinion
+
+             //*************************************************************************************************************************************
+
+             //در صورتی که اعتراض زده است تا مشخص شدن نتیجه امکان اپلود فایل وجود نداشته باشد
+             #region ISHasObjection
+
+             bool ISHasObjection = await PublicServiceRepository.ISHasObjection(MyUserID);
+             if (ISHasObjection == true)
+             {
+                 return Json(-5);//امکان آپلود فایل به دلیل ثبت اعتراض امکان پذیر نمی باشد
+             }
+
+             #endregion ISHasObjection
+
+
+             //*************************************************************************************************************************************
+
+
+
+             if (await PageAuthorizationService.AccessPageInsert(MyRoleID, PageID))
+             {
+                 if (FileContent == null)
+                 {
+                     return Json(-2);//لطفا یک فایل انتخاب کنید
+                 }
+
+
+                 string ExtensionName = Path.GetExtension(FileContent.FileName);
+                 if (ExtensionName != ".mp4")
+                 {
+                     return Json(-7);//فقط فایل های ویدیویی با پسوند mp4 قابل قبول می باشد
+                 }
+
+
+                 long LenFileContent = FileContent.Length;
+                 LenFileContent = ((LenFileContent / 1024) / 1024);//MB
+
+                 if (LenFileContent > 201)//اگر بالای 200 مگابایت بود خطا بده
+                 {
+                     return Json(-6);//حداکثر حجم فایل 200 مگابایت می باشد
+                 }
+
+
+
+
+                 string NumberNewGuid = (System.Guid.NewGuid().ToString() + Convert.ToString(Utilitys.GetRandom(10000000, 9999999999999)));
+                 NumberNewGuid = NumberNewGuid.Trim();
+
+
+
+
+
+                 string FileNameGuid = NumberNewGuid + Path.GetExtension(FileContent.FileName);
+                 var path = Path.Combine(Utilitys.GetCurrentDirectoryUploadAndDownloadFile, "wwwroot", Utilitys.StorageLocationSmallFolderName, FileNameGuid);
+                 bool IsExitFile = System.IO.File.Exists(path);
+
+
+                 using (System.IO.Stream stream = new FileStream(path, FileMode.Create))
+                 {
+                     await FileContent.CopyToAsync(stream);
+                 }
+
+
+                 string FileName = FileContent.FileName;
+                 string StorageLocation = Utilitys.StorageLocationSmall + FileNameGuid;
+                 string HashCode = "";
+                 var InsertPlayVideos = await db.PlayVideosRepository.AddAsync(new PlayVideo()
+                 {
+                     UserId = MyUserID,
+                     FileName = FileName,
+                     HashCode = HashCode,
+                     StatusId = 1,
+                     StorageLocation = StorageLocation,
+                     FileNameGuid = FileNameGuid,
+                     Descriptions = Descriptions,
+
+                     TechnicalReviewerOpinionId = 3,//نظر بازبین فنی
+                     ContentReviewerOpinionId = 3,//نظر بازبین محتوایی
+                     LegalReviewerOpinionId = 3,//نظر بازبین حقوقی
+
+
+                     CommitteTechnicalReviewerOpinionId = 3,//نظر  کمیته برای  فنی
+                     CommitteContentReviewerOpinionId = 3,//نظر  کمیته برای  محتوایی
+                     CommitteLegalReviewerOpinionId = 3,//نظر  کمیته برای  حقوقی
+
+
+
+                     CreateDate = DateTime.Now,
+                     MemberId = MyUserID,
+                     IsDelete = false
+                 });
+                 await db.SaveAsync();
+                 int New_PlayVideoID = InsertPlayVideos.Id;
+
+                 //*******************************************************************************************************************************************************
+                 //در صورتی که رکورد جدید درج شد تمام فایل های مربوط به کاربر مورد نظر را حذف کنید و فقط فایل جدیدی که درج شده حذف نشود
+                 var lstPlayVideos = (await db.PlayVideosRepository.WhereAsync(x => x.IsDelete == false && x.UserId == MyUserID && x.Id != New_PlayVideoID)).Select(x => new { x.Id, x.StorageLocation, x.FileNameGuid }).ToList();
+                 foreach (var item in lstPlayVideos)
+                 {
+                     string FileNameGuid_ForDelete = item.FileNameGuid;
+                     var path_Delete = Path.Combine(Utilitys.GetCurrentDirectoryUploadAndDownloadFile, "wwwroot", Utilitys.StorageLocationSmallFolderName, FileNameGuid_ForDelete);
+                     bool IsExitFile_Delete = System.IO.File.Exists(path_Delete);
+                     if (IsExitFile_Delete == true)
+                     {
+                         System.IO.File.Delete(path_Delete);
+                     }
+                 }
+
+                 //*********************************************************************************************************************************************************
+
+
+
+                 return Json(1);
+             }
+             else
+             {
+                 return Json(-11);//شما به این قسمت دسترسی ندارید
+             }
+
+         }
+         catch (Exception ex)
+         {
+
+             return Json(-1);
+         }
+     }

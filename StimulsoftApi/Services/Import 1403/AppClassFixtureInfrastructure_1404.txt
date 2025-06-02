@@ -1,0 +1,63 @@
+   public class AppBaseFixture 
+   {
+       public DataContext dbContext;
+       public Guid myUserID { get; set; } = new Guid("DE3D2A69-FACE-497A-B5F4-28A1367543C5");
+
+       #region HRM
+
+        
+       //مشخصات جدول مالیاتی
+       public TaxTableHeaderController TaxTableController { get; set; }
+       public IHRMTaxTableHeaderService hrmTaxTableService;
+
+       #endregion
+
+
+       public AppBaseFixture()
+       {
+           var services = new ServiceCollection();
+           services.AddControllers().AddApplicationPart(Assembly.GetExecutingAssembly()).ConfigureApiBehaviorOptions(options =>
+           {
+               options.SuppressModelStateInvalidFilter = true;//اطمینان از فعال بودن از validation
+           });
+
+
+           string connectionString = "";
+           var options = new DbContextOptionsBuilder<DataContext>().UseSqlServer(connectionString).Options;
+           dbContext = DataContext.GetInstance();
+
+
+           #region HRMService
+
+      
+           services.AddScoped<IHRMTaxTableHeaderService, HRMTaxTableHeaderService>();
+
+           #endregion
+
+
+           services.BuildServiceProvider();
+
+
+           #region HRMController
+           
+
+           //جدول مالیاتی
+           hrmTaxTableService = new HRMTaxTableHeaderService();
+           TaxTableController = new TaxTableHeaderController(hrmTaxTableService);
+
+           #endregion
+
+
+
+
+
+
+       }
+
+
+
+
+
+
+
+   }

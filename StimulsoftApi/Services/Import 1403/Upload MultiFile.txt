@@ -1,0 +1,59 @@
+
+
+ <asp:FileUpload ID="MultipleFilesUpload" runat="server" AllowMultiple="true" />  
+
+$("#BtnUpload").click(function (event) {  
+            var uploadfiles = $("#MultipleFilesUpload").get(0);  
+            var uploadedfiles = uploadfiles.files;  
+            var fromdata = new FormData();  
+            for (var i = 0; i < uploadedfiles.length; i++) {  
+                fromdata.append(uploadedfiles[i].name, uploadedfiles[i]);  
+            }  
+            var choice = {};  
+            choice.url = "UploadHandler.ashx";  
+            choice.type = "POST";  
+            choice.data = fromdata;  
+            choice.contentType = false;  
+            choice.processData = false;  
+            choice.success = function (result) { alert(result); };  
+            choice.error = function (err) { alert(err.statusText); };  
+            $.ajax(choice);  
+            event.preventDefault();  
+        });  
+
+
+
+
+namespace UploadMultipleFilesApp  
+{  
+    public class UploadHandler : IHttpHandler  
+    {  
+        public void ProcessRequest(HttpContext context)  
+        {  
+            if (context.Request.Files.Count > 0)  
+            {  
+                HttpFileCollection SelectedFiles = context.Request.Files;  
+                for (int i = 0; i < SelectedFiles.Count; i++)  
+                {  
+                    HttpPostedFile PostedFile = SelectedFiles[i];  
+                    string FileName = context.Server.MapPath("~/UploadedFiles/" + PostedFile.FileName);  
+                    PostedFile.SaveAs(FileName);                      
+                }  
+            }  
+            else  
+            {  
+                context.Response.ContentType = "text/plain";  
+                context.Response.Write("Please Select Files");  
+            }  
+            context.Response.ContentType = "text/plain";  
+            context.Response.Write("Files Uploaded Successfully!!");  
+        }  
+        public bool IsReusable  
+        {  
+            get  
+            {  
+                return false;  
+            }  
+        }  
+    }  
+} 

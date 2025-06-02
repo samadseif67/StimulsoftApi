@@ -1,0 +1,28 @@
+   public async Task<ActionResult> PlayVideoStreams(int DisplayFileVideoID = 0)
+   {
+       try
+       {
+           int MyUserID = GetMyUserID();
+           int MyRoleID = await UserService.GetRoleIDByUserID(MyUserID);
+           int PageID = PublicServiceRepository.GetPageIDByRoleIDInPagePlayVideo(MyRoleID);
+
+
+
+
+           var FindPlayVideos = await db.PlayVideosRepository.FindAsync(x => x.IsDelete == false && x.Id == DisplayFileVideoID);
+           string FileNameGuid = FindPlayVideos == null ? "" : (FindPlayVideos.FileNameGuid);
+           string SavePath = Path.Combine(Utilitys.GetCurrentDirectoryUploadAndDownloadFile, "wwwroot", Utilitys.StorageLocationSmallFolderName, FileNameGuid);
+           byte[] byteFiles = null;
+           if ((System.IO.File.Exists(SavePath)))
+           {
+               byteFiles = await System.IO.File.ReadAllBytesAsync(SavePath);
+
+           }
+           return File(byteFiles, "video/mp4", enableRangeProcessing: true);
+       }
+       catch (Exception ex)
+       {
+
+           return Json(ex.Message);
+       }
+   }

@@ -1,0 +1,12 @@
+{
+				name: "sorting", index: "sorting", width: (pageWidth * (95 / 100)), align: "center", editable: true, edittype: "select", editoptions: {
+					style: "width: 100px",
+					dataUrl: "../Home/GetLisSorting",
+					dataEvents: [{
+						type: "keypress",
+						fn: function(e) {
+
+						}
+					}]
+				}
+},

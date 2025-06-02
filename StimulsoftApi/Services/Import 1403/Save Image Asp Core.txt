@@ -1,0 +1,84 @@
+ public class Image
+    {
+
+      private IHostingEnvironment _hostingEnv;
+      public Image(IHostingEnvironment hostingEnv)
+      {
+         _hostingEnv = hostingEnv;
+      }
+
+      [HttpPost]
+      public async Task<IActionResult> UploadImage(UploadImage model, IFormFile ImageFile)
+      {
+        if (ModelState.IsValid)
+         {
+        var filename = ContentDispositionHeaderValue.Parse(ImageFile.ContentDisposition).FileName.Trim('"');
+        var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", ImageFile.FileName);
+        using (System.IO.Stream stream = new FileStream(path, FileMode.Create))
+         {
+            await ImageFile.CopyToAsync(stream);
+         }
+          model.ImageFile = filename;
+         _context.Add(model);
+         _context.SaveChanges();
+         }        
+
+      return RedirectToAction("Index","Home");   
+    }
+
+//**********************************************************************************************
+ private readonly IHostingEnvironment hostingEnvironment;
+    public HomeController(IHostingEnvironment environment)
+    {
+        hostingEnvironment = environment;
+    }
+    [HttpPost]
+    public IActionResult Create(CreatePost model)
+    {
+        // do other validations on your model as needed
+        if (model.MyImage != null)
+        {
+            var uniqueFileName = GetUniqueFileName(model.MyImage.FileName);
+            var uploads = Path.Combine(hostingEnvironment.WebRootPath, "uploads");
+            var filePath = Path.Combine(uploads,uniqueFileName);
+            model.MyImage.CopyTo(new FileStream(filePath, FileMode.Create)); 
+
+            //to do : Save uniqueFileName  to your db table   
+        }
+        // to do  : Return something
+        return RedirectToAction("Index","Home");
+    }
+    private string GetUniqueFileName(string fileName)
+    {
+        fileName = Path.GetFileName(fileName);
+        return  Path.GetFileNameWithoutExtension(fileName)
+                  + "_" 
+                  + Guid.NewGuid().ToString().Substring(0, 4) 
+                  + Path.GetExtension(fileName);
+    }
+
+//************************************************************************************************
+
+[HttpPost]
+        public IActionResult AddNews(IFormFile image)
+        {
+            Tbl_News tbl_News = new Tbl_News();
+            if (image!=null)
+            {
+
+                //Set Key Name
+                string ImageName= Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+
+                //Get url To Save
+                string SavePath = Path.Combine(Directory.GetCurrentDirectory(),"wwwroot/img",ImageName);
+
+                using(var stream=new FileStream(SavePath, FileMode.Create))
+                {
+                    image.CopyTo(stream);
+                }
+            }
+            return View();
+        }
+
+
+//***************************************************************************************************

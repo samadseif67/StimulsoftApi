@@ -1,0 +1,5 @@
+ $("#jqAffairReplicationMananagements").find("tr[id!=" + id + "]").removeClass("ui-state-highlight");
+
+
+  e.stopPropagation();
+  FuncCreateTemplateBackgroundJQgridInPage("jqAffairReplicationMananagements", $(Element).attr("AttrAffairReplicationMananagementsID"));//لطفا حذف نکنید

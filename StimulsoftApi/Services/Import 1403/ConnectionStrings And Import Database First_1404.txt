@@ -1,0 +1,10 @@
+ "ConnectionStrings": {
+
+      "EfficiencyManagementConnectionStrings": "data source=SERV-DBMAIN\\SQL2022;initial catalog=EfficiencyManagement;persist security info=True;user id=sa;password=AA123456;MultipleActiveResultSets=True;",
+      "EfficiencyManagementFileConnectionStrings": "data source=SERV-DBMAIN\\SQL2022;initial catalog=EfficiencyManagementFiles;persist security info=True;user id=sa;password=AA123456;MultipleActiveResultSets=True;"
+
+  }
+
+
+Scaffold-DbContext "Server=SERV-DBMAIN\SQL2022;Database=EfficiencyManagement;User Id=sa; Password=AA123456;" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -Force
+Scaffold-DbContext "Server=SERV-DBMAIN\SQL2022;Database=EfficiencyManagement;User Id=sa; Password=AA123456;Trusted_Connection=True;" Microsoft.EntityFrameworkCore.SqlServer -OutputDir Models -Force

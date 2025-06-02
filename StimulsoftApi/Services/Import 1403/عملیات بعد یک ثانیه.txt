@@ -1,0 +1,11 @@
+onkeyup="FuncSearchMemberShipInMangementMessanger();"
+
+ var TimerSearchinMangementMessanger;
+    function FuncSearchMemberShipInMangementMessanger()
+    {
+        clearTimeout(TimerSearchinMangementMessanger)
+        TimerSearchinMangementMessanger = TimerSearchinMangementMessanger = setTimeout(() =>
+        {
+            $("#parentDivLstAllMemberShipInPageSendMsg").find("[AttrIsSelectedOnlyPage=1]").trigger("click");
+        }, 1000);
+    }

@@ -1,0 +1,11 @@
+ public Image myBase64ToImage(string base64String)
+ {
+     // Convert Base64 String to byte[]
+     var imageBytes = Convert.FromBase64String(base64String);
+     // Convert byte[] to Image
+     using (var ms = new MemoryStream(imageBytes, 0, imageBytes.Length))
+     {
+         var image = Image.FromStream(ms, true);
+         return image;
+     }
+ }
