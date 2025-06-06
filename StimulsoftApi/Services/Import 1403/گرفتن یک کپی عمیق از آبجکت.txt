@@ -1,0 +1,9 @@
+ person DeepCopy(person obj)
+        {
+            var json = JsonSerializer.Serialize(obj);
+            return JsonSerializer.Deserialize<person>(json);
+        }
+
+
+وقتی که  داخل یک تابع یک آبجکت ارسال میکنیم به تابع دیگر 
+برای اینکه تعییرات روی آبجکت اعمال شده روی آبجکت اصلی تاثیر نگذارد  ابتدا باید یک کپی از آبجکت اصلی را به تابع مورد نظر ارسال کنیم
