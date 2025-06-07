@@ -1,0 +1,44 @@
+// Command
+public class CreateProductCommand : IRequest<int>
+{
+    public string Name { get; set; }
+}
+
+// Handler
+public class CreateProductCommandHandler : IRequestHandler<CreateProductCommand, int>
+{
+    private readonly AppDbContext _context;
+
+    public CreateProductCommandHandler(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<int> Handle(CreateProductCommand request, CancellationToken ct)
+    {
+        var product = new Product { Name = request.Name };
+        await _context.Products.AddAsync(product, ct);
+        await _context.SaveChangesAsync(ct);
+        return product.Id;
+    }
+}
+
+// Controller
+[ApiController]
+[Route("[controller]")]
+public class ProductsController : ControllerBase
+{
+    private readonly IMediator _mediator;
+
+    public ProductsController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateProductCommand command)
+    {
+        var productId = await _mediator.Send(command);
+        return Ok(productId);
+    }
+}
