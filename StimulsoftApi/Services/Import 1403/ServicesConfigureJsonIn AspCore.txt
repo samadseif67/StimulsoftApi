@@ -1,0 +1,57 @@
+appsettings.json فایل
+
+
+"settings": {
+    "url": "myurl",
+    "username": "guest",
+    "password": "guest"
+}
+
+
+
+public class Settings
+{
+    public string Url { get; set; }
+    public string Username { get; set; }
+    public string Password { get; set; }
+}
+
+
+
+var settings = builder.Configuration.GetSection("Settings").Get<Settings>();
+var url = settings.Url;
+
+
+//***************************************************************************************************************
+appsettings.json فایل
+
+
+{
+  "AppSettings": {
+    "Key": "Value"
+  }
+}
+
+
+
+public class AppSettings
+{
+    public string Key { get; set; }
+}
+
+
+
+builder.Services.AddOptions();
+builder.Services.Configure<AppSettings>(
+    builder.Configuration.GetSection("AppSettings"));
+
+
+
+private readonly AppSettings _appSettings;
+
+public HomeController(
+    IOptions<AppSettings> options)
+{
+    _appSettings = options.Value;
+}
+

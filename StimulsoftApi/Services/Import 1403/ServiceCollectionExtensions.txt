@@ -1,0 +1,25 @@
+public static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddAndConfigureLocalization(this IServiceCollection services)
+    {
+        services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+        var supportedCultures = new List<CultureInfo> { new("en"), new("fa") };
+        services.Configure<RequestLocalizationOptions>(options =>
+        {
+            options.DefaultRequestCulture = new RequestCulture("fa");
+            options.SupportedCultures = supportedCultures;
+            options.SupportedUICultures = supportedCultures;
+        });
+
+        return services;
+    }
+}
+
+//**************************************************************************************************
+
+
+builder.service.AddAndConfigureLocalization();
+
+
+//**************************************************************************************************
