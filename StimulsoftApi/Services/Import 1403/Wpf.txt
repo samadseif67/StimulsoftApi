@@ -1,0 +1,27 @@
+انواع layout
+
+<Grid>  برای صفحه اصلی با کارایی بالا استفاده میشود
+        
+        <StackPanel Orientation="Horizontal"></StackPanel>   هنگامی که بخواهیم عناصر را بصورت افقی یا عمودی در کنار همدیگر قرار بدهیم
+        <StackPanel Orientation="Vertical"></StackPanel>   هنگامی که بخواهیم عناصر را بصورت افقی یا عمودی در کنار همدیگر قرار بدهیم
+     
+      <DockPanel></DockPanel> برای اینکه بتوانیم عناصر داخل این پنل به راحتی به سمت چپ یا راست هدایت کنیم
+        
+</Grid>
+
+
+//**********************************************************************************
+برای تعریف ستون به صورت زیر عمل میکنیم
+
+ <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto"></ColumnDefinition> عرض آن به اندازه محتویات داخل آن باشد  
+            <ColumnDefinition Width="*"></ColumnDefinition>  هر چقدر که از عرض باقی ماند را تصاحب کند
+            <ColumnDefinition Width="2*"></ColumnDefinition> دو برابر از عرضی که باقی مانده را تصاحب کند
+        </Grid.ColumnDefinitions>
+      
+      <Border Grid.Column="0" Width="250" Background="Violet" BorderThickness="2" Margin="2,2,2,2" BorderBrush="Gray"></Border>  برای ایجاد یک حاشیه در اطراف ستون صفر ام بصورت روبه رو عمل میکنیم و چون عرض 250 داده ام دیگر ستون اول عرض آن فیکس میشود
+      <Border Grid.Column="1"   Background="Blue" BorderThickness="2" Margin="2,2,2,2" BorderBrush="Gray" HorizontalAlignment="Stretch" x:Name="HomePanel"></Border>  برای ایجاد یک حاشیه در اطراف ستون یکم ام بصورت روبه رو عمل میکنیم و یک نام به آن میدهیم که بتوانیم سمت کد سی شارپ ان را کنترل کنیم
+    </Grid>
+
+//***********************************************************************************
