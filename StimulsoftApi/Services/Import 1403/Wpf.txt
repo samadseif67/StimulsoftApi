@@ -21,7 +21,38 @@
         </Grid.ColumnDefinitions>
       
       <Border Grid.Column="0" Width="250" Background="Violet" BorderThickness="2" Margin="2,2,2,2" BorderBrush="Gray"></Border>  برای ایجاد یک حاشیه در اطراف ستون صفر ام بصورت روبه رو عمل میکنیم و چون عرض 250 داده ام دیگر ستون اول عرض آن فیکس میشود
-      <Border Grid.Column="1"   Background="Blue" BorderThickness="2" Margin="2,2,2,2" BorderBrush="Gray" HorizontalAlignment="Stretch" x:Name="HomePanel"></Border>  برای ایجاد یک حاشیه در اطراف ستون یکم ام بصورت روبه رو عمل میکنیم و یک نام به آن میدهیم که بتوانیم سمت کد سی شارپ ان را کنترل کنیم
-    </Grid>
+      <Border Grid.Column="1"   Background="Blue" BorderThickness="2" Margin="2,2,2,2" BorderBrush="Gray" HorizontalAlignment="Stretch"  Name="HomePanel"></Border>  برای ایجاد یک حاشیه در اطراف ستون یکم ام بصورت روبه رو عمل میکنیم و یک نام به آن میدهیم که بتوانیم سمت کد سی شارپ ان را کنترل کنیم
+      <Border Grid.Column="1"  Visibility="Collapsed" Background="Blue" BorderThickness="2" Margin="2,2,2,2" BorderBrush="Gray" HorizontalAlignment="Stretch" Name="PersonalPanel"></Border>  برای ایجاد یک حاشیه در اطراف ستون یکم ام بصورت روبه رو عمل میکنیم و یک نام به آن میدهیم که بتوانیم سمت کد سی شارپ ان را کنترل کنیم و همچنین می توانیم با استفاده از اتربیوت وزیبلیتی حالت پنهان کنیم یا نمایش بدهیم
+     
+
+
+</Grid>
 
 //***********************************************************************************
+CanUserAddRows کاربر بصورت دستی نتواند یک سطر به گرید اضافه کند
+CanUserResizeColumns کاربر بتواند ریسایز کند ستون ها رو
+ColumnWidth="*" وقتی ستاره هست یعنی تمام عرض تمام ستون ها با هم برابر باشد
+MinColumnWidth="100"  حداقل عرض ستون را مشخص میکنیم تا وقتی که داده ای وجود نداشت همه بهم نچسبنند
+SelectionChanged هنگامی که روی سطری کلیک شده چه رویدادی انجام شود
+برای نمایش اطلاعات
+
+<DataGrid Name="PersonGrid" CanUserAddRows="False" CanUserResizeColumns="True" CanUserResizeRows="True" HorizontalAlignment="Stretch" ColumnWidth="*" MinColumnWidth="100" SelectionChanged="PersonGrid_SelectionChanged" ></DataGrid>
+
+
+تفاوت 
+list
+observablecollection
+مثلا یک دیتا گرید از یک لیست پر میشود و برای اینکه همیشه داده ها درست نمایش داده شود باید لیست رفرش شود
+اما ابزروبیل کالکشن مثل لیست می باشد اما بمحض تغییرات خودش سمت فرانت را با خبر میکند و دیتا گرید بصورت اتوماتیک داده هاش بروز میشود
+//********************************************************************************************************************************************
+
+تفاوت stackpanel با dockpanel
+stackpanel  تمام عناصر مثل اینپوت و کمبو بصورت عمودی پشت سر هم قرار میگیرد
+dockpanel تمام عناصر مثل اینپوت و کمبو بصورت افقی پشت سر هم قرار میگیرد 
+
+//*********************************************************************************************************************************************
+
+
+
+
+
