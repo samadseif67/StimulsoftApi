@@ -1,0 +1,83 @@
+پالی برای قسمت کلاینت پیاده سازی میشود 
+به این صورت است که شما وقتی یک وب سرویس را صدا میزنید ممکن هست چند ثانیه در دسترس نباشد 
+در قسمت کلاینت با استفاده از پالی بصورت داینامیک بجای اینک سریع خطا نمایش داده شود دو باره درخواست به سمت وب سرویس از طریق پالی ارسال میشود 
+تا در نهایت جواب بیایید
+در صورتیکه بعد از چند ین بار تلاش جواب نیامد 
+آن موقع خطا صادر میشود
+
+
+//*************************************
+
+using Polly;
+using Polly.Extensions.Http;
+
+namespace Polly_Client_App.Pollys
+{
+    public  class PollyConfig
+    {
+
+         
+      public static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy()
+        {
+            return HttpPolicyExtensions
+                .HandleTransientHttpError()
+                .CircuitBreakerAsync(
+                    handledEventsAllowedBeforeBreaking: 3,//بعد از سه بار تلاش کردن اگر جواب نگرفتیم تا 20 ثانیه دیگر نتوانیم به سرور درخواست بدهیم
+                    durationOfBreak: TimeSpan.FromSeconds(20),
+                    onBreak: (exception, breakDelay) =>
+                    {
+                        Console.WriteLine($"Circuit broken: {exception.Result}");
+                    },
+                    onReset: () =>
+                    {
+                        Console.WriteLine("Circuit reset");
+                    },
+                    onHalfOpen: () =>
+                    {
+                        Console.WriteLine("Circuit in half-open state");
+                    });
+        }
+
+
+      
+        public static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+        {
+            return HttpPolicyExtensions
+                .HandleTransientHttpError()
+                .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
+                .WaitAndRetryAsync(5, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))// Retry two times after delay 
+                , (_,waitingtime) =>
+                {
+                    Console.ForegroundColor= ConsoleColor.Red;
+                    Console.WriteLine($"polly retry {DateTime.Now.ToShortTimeString()}");
+                    Console.ResetColor();
+
+                });  
+
+        }
+
+
+
+
+
+
+    }
+}
+//********************************************************************************
+//******************************************************* Polly ***************************************
+
+builder.Services.AddScoped<ProductService>();
+builder.Services.AddHttpClient<ProductService>(x =>
+{
+    x.BaseAddress = new Uri("http://localhost:5281/api/");
+}).AddPolicyHandler(PollyConfig.GetCircuitBreakerPolicy()).AddPolicyHandler(PollyConfig.GetRetryPolicy());
+
+
+
+
+//*******************************************************************************************************
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.6" />
+    <PackageReference Include="Polly" Version="8.6.1" />
+    <PackageReference Include="Polly.Extensions.Http" Version="3.0.0" />
+  </ItemGroup>
