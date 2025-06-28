@@ -1,0 +1,43 @@
+1- نصب پکیج
+webessentionals.aspnetcore.pwa
+
+2-در پوشه زیر فایل زیر را ایجاد میکنیم
+
+wwww پوشه
+manifest.json فایل
+
+محتوای فایل
+
+{
+  "name": "Buy Share",
+  "short_name": "Buy Share",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFE9D2",
+  "theme_color": "#FFE1C4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://community.toph.co/uploads/default/optimized/2X/5/5b9de7676657b71384fb77c662616d73765f0293_2_512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "https://community.toph.co/uploads/default/optimized/2X/5/5b9de7676657b71384fb77c662616d73765f0293_2_512x512.png",
+      "sizes": "192x192",
+      "type": "image/png"    
+    }
+  ]
+}
+
+
+
+3-قرار دادن لینک فایل زیر در داخل صفحه اچتیمیل اصلی یا همان لیوت
+
+ <link rel="manifest"  href="../manifest.json" />
+
+
+
+4- اضافه کردن سرویس زیر
+builder.Services.AddProgressiveWebApp();
+
