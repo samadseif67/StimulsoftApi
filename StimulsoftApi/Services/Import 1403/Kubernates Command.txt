@@ -54,6 +54,10 @@ kubectl delete -f podfile.yaml  برای برگرداندن یا حذف چیزی
 وظیفه deployment در کوبرنیتیز
 مسولیت چند تا پاد را بعهده دارد
 ممکنه یک پاد باشد یا چند تا پاد
+در صورتی که یک پاد حذف یا خراب شود و نتواند سرویس دهد سریعا یک پاد توسط دیپلویمنت جایگزین میشود
+
+
+
 
 kubectl create deploy hello-kube --image=node1    برای ایجاد یک دپلوی منت که داخل آن یک پاد وجود دارد
 
@@ -64,7 +68,8 @@ kubectl get deploy hello-kube -o jsonpath="{.spec.template.metadata.labels}" ت�
 
 kubectl get pods -l app=hello-kube   تمام پاد های که لیبیل مورد نظر را دارند را بازیابی کنیم
 
-kubectl port-forward deploy Hellokube --8080:80   برای ارائه پورت به دپلوی برای نمایش یک پاد در مرورگر
+kubectl port-forward deployment/Hellokube --8080:80   برای ارائه پورت به دپلوی برای نمایش یک پاد در مرورگر
+kubectl port-forward deployment/mongo 28015:27017
 
 kubectl delete deploy hello-kube   برای حذف دپلوی مورد نظر - در صورتی که حذف انجام شود تمام پاد های که زیر نظر آن دیپلوی هستند حذف میشود
 
