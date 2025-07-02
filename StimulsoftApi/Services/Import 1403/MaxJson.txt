@@ -1,0 +1,2 @@
+ <appSettings>
+   <add key="aspnet:MaxJsonDeserializerMembers" value="2147483644" />

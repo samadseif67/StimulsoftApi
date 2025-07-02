@@ -1,0 +1,271 @@
+ public ActionResult ReportExcellReportContractPayments(int ContractID = 0, int IsMyContract = 0)
+ {
+
+
+     List<HeaderFloorOne> LstHeaderFloorOne = new List<HeaderFloorOne>();
+     List<HeaderFloorTwo> lstHeaderFloorTwo = new List<HeaderFloorTwo>();
+
+
+
+
+     int StateHeaderFloor = 1;
+
+     string NameClumnsRow = "ردیف";
+
+
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = -1, Tilte = NameClumnsRow });//ردیف
+
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 1, Tilte = "علت پرداخت" });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 2, Tilte = "نوع" });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 3, Tilte = "شماره فرم پرداخت  " });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 4, Tilte = "تاریخ فرم پرداخت  " });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 5, Tilte = "جمع ناخالص" });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 6, Tilte = " خزانه" });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 7, Tilte = "بالاسری  " });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 8, Tilte = "  بیمه  " });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 9, Tilte = " مالیات  " });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 10, Tilte = " جمع خالص پرداختی" });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 11, Tilte = "  وضعیت پرداخت " });
+     LstHeaderFloorOne.Add(new HeaderFloorOne() { ID = 12, Tilte = "   " });
+
+
+
+
+
+
+
+
+
+     //********************************************************************************
+     var Result = AllReport_ContractPayment(ContractID, IsMyContract);
+
+     List<LstValueCellExcelClass> LstExcell = new List<LstValueCellExcelClass>();
+     LstExcell = Result.LstValueCellExcelClassOne;
+     //**********************************************************************************   
+
+
+     ReportExcell ClsReport = new ReportExcell();
+     var ExportExcelForWebSite1 = ClsReport.ResultReportExcel(LstExcell, lstHeaderFloorTwo, LstHeaderFloorOne, StateHeaderFloor);
+
+
+     Random rand = new Random();
+     var Filename = rand.Next(451252255).ToString();
+     string path = Server.MapPath("~/ResultReportExcel/Report" + Filename + ".xlsx");
+     ExportExcelForWebSite1.SaveAs(path);
+     string contentType = MimeMapping.GetMimeMapping(path);
+
+     var data = new
+     {
+         path = path,
+         contentType = contentType
+     };
+     return Json(data);
+
+
+
+
+ }
+ public CombineresultrowAndLstValueCellExcelClass AllReport_ContractPayment(int ContractID = 0, int IsMyContract = 0)
+ {
+
+     int MemberID = Convert.ToInt32(Session["MembershipID"]);
+
+
+     var LstContractpayment = utility.GetAllLoadGridDataContractPayments(ContractID, IsMyContract, MemberID).Select(x => new
+     {
+         x.MoneyTransferForTypeTitle,
+         x.MoneyTypeTitle,
+         x.PaymentDocumentNumber,
+         x.PaymentDatetime,
+         x.PaymentAmount,
+         x.TreasuryShareAmount,
+         x.OverheadFactorAmount,
+         x.InsuranceAmount,
+         x.TaxAmount,
+         x.PayableAmount,
+         x.RegisterPaymentText,
+         x.HasFailText
+
+     }).ToList();
+
+
+
+     var LstContractpaymentExcell = LstContractpayment.Select(x => new
+     {
+         x.MoneyTransferForTypeTitle,
+         x.MoneyTypeTitle,
+         x.PaymentDocumentNumber,
+         x.PaymentDatetime,
+         x.PaymentAmount,
+         x.TreasuryShareAmount,
+         x.OverheadFactorAmount,
+         x.InsuranceAmount,
+         x.TaxAmount,
+         x.PayableAmount,
+         x.RegisterPaymentText,
+         x.HasFailText
+
+     }).ToList();
+
+     DataTable dt = new DataTable();
+     dt = utility.ToDataTable(LstContractpaymentExcell);
+
+
+
+     List<rowdata> listrow = new List<rowdata>();
+     List<LstValueCellExcelClass> LstAllValueExcell = new List<LstValueCellExcelClass>();
+     for (int i = 0; i < dt.Rows.Count; i++)
+     {
+         rowdata newrow1 = new rowdata();
+         List<ValueCellExcel> VExcel = new List<ValueCellExcel>();
+         newrow1.cell = new string[dt.Columns.Count];
+
+         VExcel.Add(new ValueCellExcel() { Value = Convert.ToString((i + 1)) });
+         for (int j = 0; j < dt.Columns.Count; j++)
+         {
+             newrow1.cell[j] = dt.Rows[i][j].ToString();
+
+             VExcel.Add(new ValueCellExcel() { Value = dt.Rows[i][j].ToString() });
+
+         }
+         listrow.Add(newrow1);
+
+         LstAllValueExcell.Add(new LstValueCellExcelClass() { LstValueCellExcel = VExcel });
+     }
+
+
+
+
+
+     CombineresultrowAndLstValueCellExcelClass RComplate = new CombineresultrowAndLstValueCellExcelClass();
+     RComplate.ResultJqgridNotDynamic = LstContractpayment;
+     RComplate.LstValueCellExcelClassOne = LstAllValueExcell;
+
+
+     return RComplate;
+
+ }
+
+
+
+public ActionResult DownloadFile(string Path = "", string contentType = "")
+{
+
+       byte[] File1 = System.IO.File.ReadAllBytes(Path);
+       System.IO.File.Delete(Path);
+       return File(File1, contentType);
+}
+
+
+
+ public System.Data.DataTable ToDataTable<T>(List<T> items)
+ {
+     System.Data.DataTable dataTable = new System.Data.DataTable(typeof(T).Name);
+     //Get all the properties
+     PropertyInfo[] Props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+     foreach (PropertyInfo prop in Props)
+     {
+         //Setting column names as Property names
+         dataTable.Columns.Add(prop.Name);
+     }
+     foreach (T item in items)
+     {
+         var values = new object[Props.Length];
+         for (int i = 0; i < Props.Length; i++)
+         {
+             //inserting property values to datatable rows
+             values[i] = Props[i].GetValue(item, null);
+         }
+         dataTable.Rows.Add(values);
+     }
+     //put a breakpoint here and check datatable
+     return dataTable;
+ }
+
+
+//*****************************************************************************************************************************
+   $.ajax({
+       url: "/Contracts/ReportExcellReportContractPayments/",
+       data: JSON.stringify({
+           ContractID: NewContractsID,
+           IsMyContract: IsMyContract
+       }),
+       contentType: "application/json; charset=utf-8",
+       type: "post",
+       datatype: "json",
+       beforeSend: function () {
+           ShowElementID("ImageLoaderReportCoagulation");
+       },
+       complete: function () {
+           HideElementID("ImageLoaderReportCoagulation");
+       },
+       success: function (data) {
+
+           window.location = "/ContractReports/DownloadFile?Path=" + data.path + "&contentType=" + data.contentType;
+       }
+   })
+//**************************************************************************************************************************
+//**************************************************************************************************************************
+
+ public class ValueCellExcel
+ {
+     public string Value { get; set; }
+ }
+
+ public class LstValueCellExcelClass
+ {
+     public List<ValueCellExcel> LstValueCellExcel { get; set; }
+ }
+
+ public class rowdata
+ {
+     public int id { get; set; }
+     public string province { get; set; }
+     public string[] cell { get; set; }
+ };
+
+ public class resultrow
+ {
+     public rowdata[] rows { get; set; }
+     public int page { get; set; }
+
+ }
+
+ public class CombineresultrowAndLstValueCellExcelClass
+ {
+     public resultrow resultrowOne { get; set; }
+
+     public List<LstValueCellExcelClass> LstValueCellExcelClassOne { get; set; }
+
+     public object ResultJqgridNotDynamic { get; set; }
+ }
+
+
+
+
+
+ public class HeaderFloorOne
+ {
+     public int ID { get; set; }
+     public string Tilte { get; set; }
+ }
+
+ public class HeaderFloorTwo
+ {
+     public int FloorOneID { get; set; }
+     public string FloorOneTilte { get; set; }
+
+     public int FloorTwoID { get; set; }
+     public string FloorTwoTilte { get; set; }
+
+
+ }
+
+
+
+
+
+
+
+
+

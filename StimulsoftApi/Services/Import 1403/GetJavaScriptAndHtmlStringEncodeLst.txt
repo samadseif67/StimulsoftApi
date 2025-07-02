@@ -1,0 +1,52 @@
+  #region Encodeing
+  private string JavaScriptStringEncode(string Input)
+  {
+      string Result = System.Web.HttpUtility.JavaScriptStringEncode(Input);
+      return Result;
+  }
+  private string HtmlEncode(string Input)
+  {
+      string Result = System.Web.HttpUtility.HtmlEncode(Input);
+      return Result;
+  }
+  private string UrlEncode(string Input)
+  {
+      string Result = System.Web.HttpUtility.UrlEncode(Input);
+      return Result;
+  }
+
+  public string JavaScriptAndHtmlStringEncode(string Input)
+  {
+      var Result = HtmlEncode(JavaScriptStringEncode(Input));
+      return Result;
+  }
+
+  //برای اینکه کاربر نتواند کد های جاوااسکریپت را داخل دیتابیس ذخیره کند
+  public List<T> GetJavaScriptAndHtmlStringEncodeLst<T>(List<T> ObjNew)
+  {
+
+      List<T> Result = new List<T>();
+      foreach (var x in ObjNew)
+      {
+          var Find = GetJavaScriptAndHtmlStringEncodeObj<T>(x);
+          Result.Add(Find);
+      }
+      return Result;
+  }
+
+  //برای اینکه کاربر نتواند کد های جاوااسکریپت را داخل دیتابیس ذخیره کند
+  public T GetJavaScriptAndHtmlStringEncodeObj<T>(T ObjNew)
+  {
+      foreach (var x in ObjNew.GetType().GetProperties())
+      {
+          var name = x.Name;
+          if (x.PropertyType.Name.ToLower() == "string")
+          {
+              var Value = x.GetValue(ObjNew);
+              x.SetValue(ObjNew, JavaScriptAndHtmlStringEncode(Convert.ToString(Value)));
+          }
+      }
+      return ObjNew;
+  }
+
+  #endregion Encodeing

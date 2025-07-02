@@ -1,0 +1,59 @@
+  System.Net.ServicePointManager.Expect100Continue = true;
+  System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+  //********************************************************************************************
+
+  ItemLoginSSo_Request_Token infRequest_Token1 = new ItemLoginSSo_Request_Token();
+  infRequest_Token1.code = code;
+  infRequest_Token1.client_id = "ABNV ";
+  infRequest_Token1.client_secret = " "ABNV 12";
+  infRequest_Token1.grant_type = ""ABNV 13";
+  infRequest_Token1.redirect_uri = " "https://googletwo.com";
+
+
+
+  ItemLoginSSo_Response_Token itemLoginSSo_Response_Token = new ItemLoginSSo_Response_Token();
+  var client = new RestClient("https://googletwo.com/oauth2/token");
+  var request = new RestRequest(Method.POST);
+  request.AddHeader("content-type", "application/json");
+  request.AddJsonBody(infRequest_Token1);
+  var ResultToken = client.Execute<ItemLoginSSo_Response_Token>(request);
+  HttpStatusCode StatusCode = ResultToken.StatusCode;
+
+
+  if ((int)StatusCode != 200)
+  {
+      
+  }
+
+
+  string access_token = ResultToken.Data.access_token;
+
+  
+
+  string UrlUser = "https://googletwo.com/oauth2/userinfo?access_token=" + access_token + "&token_type=Bearer";
+  var clientUser = new RestClient(UrlUser);
+  var requestUser = new RestRequest(Method.GET);
+  var ResultUser = clientUser.Execute<ItemLoginSSo_User>(requestUser);
+  HttpStatusCode StatusCodeUser = ResultUser.StatusCode;
+
+//****************************************************************************************************
+
+  public class ItemLoginSSo_Request_Token
+  {
+      public string code { get; set; }
+      public string client_id { get; set; }
+      public string client_secret { get; set; }
+      public string grant_type { get; set; }
+      public string redirect_uri { get; set; }
+  }
+
+  public class ItemLoginSSo_Response_Token
+  {
+      public string access_token { get; set; }
+      public string expires_in { get; set; }
+      public string token_type { get; set; }
+      public string scope { get; set; }
+      public string id_token { get; set; }
+
+  }

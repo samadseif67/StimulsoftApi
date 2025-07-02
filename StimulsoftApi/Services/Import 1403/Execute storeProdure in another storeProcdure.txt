@@ -1,0 +1,14 @@
+declare  @Tbl table
+(
+   Type nvarchar(200),
+   ID varchar(200),
+   Title nvarchar(200),
+   Nationalcode varchar(200)
+)
+
+  insert into @Tbl(Type,ID,Title,Nationalcode) 
+  exec [dbo].[sp_OrganizationsandUsersList]
+
+
+  select *
+  from @Tbl

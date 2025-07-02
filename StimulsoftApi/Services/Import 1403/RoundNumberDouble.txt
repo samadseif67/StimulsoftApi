@@ -1,0 +1,5 @@
+ public static double RoundNumberDouble(double? Number)
+ {
+     double FirstNumber = Convert.ToDouble(Number);
+     return Math.Floor(FirstNumber);
+ }

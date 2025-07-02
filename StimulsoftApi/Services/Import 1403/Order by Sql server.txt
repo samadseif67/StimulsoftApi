@@ -1,0 +1,2 @@
+order by  case when @SortOrder=1 and @SortColumn='ContractTypeTitle' then  ContractTypeTitle end desc  ,
+          case when @SortOrder=1 and @SortColumn='EmployerOrganizationTitle' then  EmployerOrganizationTitle  end desc ,
