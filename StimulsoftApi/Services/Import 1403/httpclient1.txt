@@ -1,0 +1,13 @@
+ private readonly HttpClient _client;
+  public HomeController(HttpClient client)
+        {
+            _client = client;
+            _client.BaseAddress = new Uri("http://localhost:5136/api/");
+            StringContent httpContent = new StringContent("", System.Text.Encoding.UTF8, "application/json");
+            var result = await _client.PostAsync("Home/Test1", httpContent);
+            var guid = result.Content.ReadFromJsonAsync<string>().Result;
+        }
+
+
+//****************************************************************
+builder.Services.AddHttpClient();

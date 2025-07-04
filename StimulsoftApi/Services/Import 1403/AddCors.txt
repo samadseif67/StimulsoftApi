@@ -1,0 +1,8 @@
+builder.Services.AddCors(options => options.AddPolicy("ApiCorsPolicy", builder =>
+{
+    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+}));
+
+
+app.UseCors("ApiCorsPolicy");
+app.UseMvc();

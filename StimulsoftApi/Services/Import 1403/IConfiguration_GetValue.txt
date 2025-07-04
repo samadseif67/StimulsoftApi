@@ -1,0 +1,23 @@
+       private readonly IConfiguration _configuration;
+        public HomeController( IConfiguration configuration)
+        {
+            
+            _configuration = configuration;
+            var urlApiRandom = _configuration.GetValue<string>("UrlApi:ApiRandom");
+        }
+
+
+
+//*********************************************************************************
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "UrlApi": {
+    "ApiRandom": "http://localhost:5136/api/"
+  }
+}
