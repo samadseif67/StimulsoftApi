@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-headless-service
+spec:
+  clusterIP: None  # <-- اینجا Headless است
+  ports:
+    - port: 80
+      targetPort: 9376
+  selector:
+    app: my-app
+
+
+# وقتی می‌خواهید مستقیماً با هر پاد صحبت کنید
+# مستقیماً با پادها از طریق آی پی ارتباط برقرار میکنیم
+  
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: my-headless-service
+# spec:
+#   clusterIP: None  //با استفاده از این ویژگی متوجه میشویم که سرویس از نوع هدلس می باشد و این بدان معناست که به پاد ها یک آی پی واقعی بدهد تا بتوانیم مستقیما به آن پاد وصل بشویم
+#   ports:
+#     - port: 80  //درگاهی که سرویس از طریق آن به خارج از پاد قابل دسترسی است
+#       targetPort: 9376  //پورت داخلی پاد ها
+#   selector:
+#     app: my-app  //این بخش مشخص می‌کند که این سرویس روی چه پادهایی اعمال می‌شود

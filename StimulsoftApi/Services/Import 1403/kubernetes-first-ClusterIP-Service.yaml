@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: randomapi-internal-service  # Replace with your service name
+spec:
+  selector:
+    app: randomapi-internal # Replace with your pod selector label
+  ports:
+    - protocol: TCP
+      port: 8044          # Service port
+      targetPort: 80  # Port on the pods the service will forward to
+  type: ClusterIP

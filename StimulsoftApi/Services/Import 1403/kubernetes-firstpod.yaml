@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: firstpod3
+spec:
+  containers:
+    - name: firstpod3
+      image: productsapi
+      imagePullPolicy: Never 
+      ports:
+            - containerPort: 8080

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: randomapi-external-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: randomapi-external
+  template:
+    metadata:
+      labels:
+        app: randomapi-external
+    spec:
+      containers:
+        - name: random-external-container 
+          image: apiexternal1   
+          imagePullPolicy: Never 
+          ports:
+            - containerPort: 80
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://*:80"  # برای .NET Core اطمینان حاصل کنید روی پورت صحیح اجرا می‌شود
+            - name: AB
+              value: "reza"
