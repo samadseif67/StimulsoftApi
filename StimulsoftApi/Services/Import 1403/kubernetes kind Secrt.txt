@@ -1,0 +1,123 @@
+برای اینکه بتوانیم امنیت برای پسورد یا هر چیزی که بخواهیم ست کنیم از نمونه زیر استفاده میکنیم
+
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+data:
+  username: dXNlcgo=
+  password: cGFzc3dvcmQxMjM=
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+spec:
+  containers:
+    - name: app
+      image: nginx
+      envFrom:
+        - secretRef:
+            name: db-secret
+
+
+
+
+//*****************************************************************************
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-secret
+type: Opaque
+data:
+  username: dXNlcgo=
+  password: cGFzc3dvcmQxMjM=
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+spec:
+  containers:
+    - name: app
+      image: nginx
+      volumeMounts:
+        - name: secret-volume
+          mountPath: /etc/secret
+          readOnly: true
+  volumes:
+    - name: secret-volume
+      secret:
+        secretName: db-secret
+        defaultMode: 420 # optional: مود پیش‌فرض دسترسی به فایل‌ها (644)
+
+
+//******************************************************************************
+kubectl exec -it my-pod -- cat /etc/secret/username
+kubectl exec -it my-pod -- cat /etc/secret/password
+
+
+//*****************************************************************************
+# مشخص کردن نسخه API - برای منابع پایه مثل Secret و Pod از v1 استفاده می‌شود.
+apiVersion: v1
+
+# نوع منبع - در اینجا یک Secret تعریف می‌کنیم.
+kind: Secret
+
+# بخش متادیتا (اطلاعات دلخواه)
+metadata:
+  # نام Secret - این اسم را بعداً در Pod برای ارجاع استفاده می‌کنیم.
+  name: db-secret
+
+# نوع Secret - Opaque یعنی داده‌های دلخواه غیر قابل فهم برای کوبرنتیس
+type: Opaque
+
+# بخش data - اطلاعات حساس به صورت base64 کدگذاری شده
+data:
+  username: dXNlcgo=    # admin در قالب base64
+  password: cGFzc3dvcmQxMjM=  # password123 در قالب base64
+
+# خط جداکننده بین منابع YAML (مانند Secret و Pod)
+---
+# مشخص کردن نسخه API - باز هم از v1 استفاده می‌کنیم.
+apiVersion: v1
+
+# نوع منبع - اینبار یک Pod تعریف می‌کنیم.
+kind: Pod
+
+# بخش متادیتا
+metadata:
+  # نام Pod - این اسم برای مدیریت Pod در خوشه استفاده می‌شود.
+  name: my-pod
+
+# مشخصات Pod
+spec:
+  # لیست کانتینرهای داخل Pod
+  containers:
+    - name: app          # نام کانتینر
+      image: nginx       # تصویر Docker برای این کانتینر
+      # mount point برای Volumeها
+      volumeMounts:
+        - name: secret-volume     # نام Volume که می‌خواهیم mount کنیم
+          mountPath: /etc/secret  # مسیر داخل کانتینر که Volume در آن mount می‌شود
+          readOnly: true          # اجازه نمی‌دهیم داده‌ها تغییر کنند (توصیه امنیتی)
+
+  # تعریف Volumeها برای Pod
+  volumes:
+    - name: secret-volume         # نام Volume
+      secret:                     # نوع Volume - اینجا یک Secret است
+        secretName: db-secret     # نام Secretی که قبلاً تعریف کردیم
+        defaultMode: 420          # مود دسترسی پیش‌فرض فایل‌ها (معادل 644 در مود فایل)
+
+
+
+//************************************************************************************************************
+
+
+
+
+
+
+

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aspnet-app
+  labels:
+    app: aspnet-core-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aspnet-core-api
+  template:
+    metadata:
+      labels:
+        app: aspnet-core-api
+    spec:
+      containers:
+        - name: app
+          image: mcr.microsoft.com/dotnet/aspnet:8.0
+          imagePullPolicy: Never
+          workingDir: /app
+          command: ["dotnet", "MyApp.dll"] # اسم دقیق فایل DLL برنامه شما
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: app-volume
+              mountPath: /app
+      volumes:
+        - name: app-volume
+          hostPath:
+            path: F:/MyApp   # مسیر محلی روی هاست (نوت: در لینوکس این مسیر باید موجود باشد)
+            type: Directory
+
+
+
+//*****************************************************************************************************************
