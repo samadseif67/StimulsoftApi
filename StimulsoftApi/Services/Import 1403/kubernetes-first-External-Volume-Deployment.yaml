@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: randomapi-external-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: randomapi-external
+  template:
+    metadata:
+      labels:
+        app: randomapi-external
+    spec:
+      containers:
+        - name: random-external-container 
+          image: apiexternal1   
+          imagePullPolicy: Never 
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: volumes-randomapi-external
+              mountPath: /app
+           
+      volumes:
+        - name: volumes-randomapi-external
+          persistentVolumeClaim:
+            claimName: pvc-randomapi-external

@@ -1,0 +1,60 @@
+ 
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-randomapi-external
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain  #این ولیوم با حذف پاد از بین نمی رود
+  hostPath:
+    path: /run/desktop/mnt/host/f/volumes-randomapi-external
+    type: DirectoryOrCreate
+
+--- #برای اینکه بتوانیم چند تا محتوای فایل یمل را کنار همدیگر قرار بدهیم
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-randomapi-external
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: pv-randomapi-external
+
+--- #برای اینکه بتوانیم چند تا محتوای فایل یمل را کنار همدیگر قرار بدهیم
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: randomapi-external-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: randomapi-external
+  template:
+    metadata:
+      labels:
+        app: randomapi-external
+    spec:
+      containers:
+        - name: random-external-container 
+          image: apiexternal1   
+          imagePullPolicy: Never 
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: volumes-randomapi-external
+              mountPath: /app
+           
+      volumes:
+        - name: volumes-randomapi-external
+          persistentVolumeClaim:
+            claimName: pvc-randomapi-external

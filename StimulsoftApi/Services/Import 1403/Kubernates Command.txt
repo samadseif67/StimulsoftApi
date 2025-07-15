@@ -16,6 +16,9 @@ start "" /B kubectl port-forward pod/firstpod1 8080:3000  برای تنظیم پ
 
 kubctl delete pod helloword برای حذف پاد مورد نظر
 kubectl exec deploy/cachexample -c cach1 --killall5  برای از بین بردن کانتینر استفاده میشود و حذف محسوب نمیشود
+
+kubectl get pod p1 hostpath -o yaml  //نمایش فایل یملی که این پاد را ساخته
+kubectl get pv //گرقتن تمام ولیوم ها 
 //******************************************************************************************************************************
 ایجاد یک فایل یمل که داخل آن یم پاد تعریف کرده ایم
 
@@ -496,9 +499,57 @@ hostpath:   //وابسته به پاد نمی باشد و یک سطح بالا �
   type:DirectoryOrCreate //اگر مسیر بالا وجود ندارد آن را ایجاد کن
 
 
+
+PersistentVolumeClaim :یک نوع والیوم هست که یک درخواست میدهد که چقدر فضای ذخیره سازی نیاز داریم
+  claimName:P1_Pvc
+
+
+apiVerion:v1
+kind:PersistentVolumeClaim
+metadata:
+  name:P1_Pvc
+spec:
+  accessModes:
+    - ReadWriteOnce --فقط یک پاد بتواند روی این فضا بخواند و بنویسد
+  resources:
+    request:
+      storage:1Gi   درخواست یک گیگ فضای ذخیره سازی
+
+
+
+
+kubectl get pvc //برای مشاهده تمام PersistentVolumeClaim
+kubectl get storageClass  //برای لیست کردن تما استوریج کلس ها
+
+
+
 تفاوت Directory با DirectoryCreate در چه چیزی هست
 در دایرکت باید حتما مسیر وجود داشته باشد
 در دایرکت کریتور اگر مسیر وجود نداشته باشد آن مسیر ایجاد میشود
+
+
+storageClass بصورت داینامیک میزان خواسته کاربر از فضای ذخیره سازی را ایجاد میکند
+
+
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-randomapi-external
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /run/desktop/mnt/host/f/volumes-randomapi-external
+    type: DirectoryOrCreate
+
+
+
+
 
 
 
