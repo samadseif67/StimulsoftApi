@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-with-init
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      # تعریف InitContainerها (مرحله آماده‌سازی)
+      initContainers: #اول این قسمت اجرا میشود
+      - name: download-assets
+        image: busybox:latest
+        command: ['sh', '-c', 'wget https://example.com/config.tar.gz -O /assets/config.tar.gz && tar -xzf /assets/config.tar.gz -C /assets']
+        volumeMounts:
+        - name: app-data
+          mountPath: "/assets"
+      
+      # تعریف Container اصلی
+      containers: # بعد از اجرای قسمت اول این قسمت اجرا میشود
+      - name: webapp
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: app-data
+          mountPath: "/usr/share/nginx/html"
+          readOnly: true
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+      
+      # تعریف Volume مشترک
+      volumes:
+      - name: app-data
+        emptyDir: {}

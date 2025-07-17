@@ -4,8 +4,8 @@ metadata:
   name: randomapi-external-service  # Replace with your service name
 spec:
   selector:
-    app: randomapi-external # Replace with your pod selector label
+    app: randomapi-external # در این قسمت مشخص میکنیم که چه پادهای با چه لبیلی را مدیریت کند
   ports:
     - port: 8045          # Service port
-      targetPort: 80  # Port on the pods the service will forward to
+      targetPort: 80  # همان پورت کانینر که داخل پاد تعریف میکنیم 
   type: LoadBalancer

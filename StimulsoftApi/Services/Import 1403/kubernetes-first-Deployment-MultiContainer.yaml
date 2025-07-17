@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: randomapi-external-deployment
+spec:
+  replicas: 1 #برای اینکه مشخص کنیم چند تا پاد داخل این دپلوی منت داشته باشیم
+  selector:
+    matchLabels:
+      app: randomapi-external
+  template:
+    metadata:
+      labels:
+        app: randomapi-external
+    spec:
+      containers:
+        - name: random-external-container 
+          image: apiexternal1   
+          imagePullPolicy: Never #برای اینکه بتوانیم از ایمیج های خود داکر سیستم خودمان استفاده کنیم
+          ports:
+            - name: port80  # نام پورت (اختیاری اما مفید برای ارجاع)
+              containerPort: 80
+              
+          resources:   #در این قسمت منابع را مشخص میکنیم
+            requests:  #این بخش حداقل منابع مورد نیاز کانتینر را مشخص میکند.
+              memory: "64Mi"
+              cpu: "250m"
+            limits:  #این بخش حداکثر منابعی که کانتینر میتواند استفاده کند را مشخص میکند
+              memory: "128Mi"
+              cpu: "500m" 
+        - name: random-external-container2 
+          image: apiexternal1  
+          imagePullPolicy: Never #برای اینکه بتوانیم از ایمیج های خود داکر سیستم خودمان استفاده کنیم
+          ports:
+            - name: port81  # نام پورت (اختیاری اما مفید برای ارجاع)
+              containerPort: 80
+              
+
+
+---  #برای اینکه بتوانیم میحتوای دو تا فایل یمل را داخل یک فایل یمل قرار بدهیم
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: randomapi-external-service  # Replace with your service name
+spec:
+  selector:
+    app: randomapi-external # در این قسمت مشخص میکنیم که چه پادهای با چه لبیلی را مدیریت کند
+  ports:
+    - port: 8045          # Service port
+      targetPort: port80  # همان پورت کانینر که داخل پاد تعریف میکنیم 
+  type: LoadBalancer
+
+
+---  #برای اینکه بتوانیم میحتوای دو تا فایل یمل را داخل یک فایل یمل قرار بدهیم
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: randomapi-external-service1  # Replace with your service name
+spec:
+  selector:
+    app: randomapi-external # در این قسمت مشخص میکنیم که چه پادهای با چه لبیلی را مدیریت کند
+  ports:
+    - port: 8046          # Service port
+      targetPort: port81  # همان پورت کانینر که داخل پاد تعریف میکنیم 
+  type: LoadBalancer
+ 

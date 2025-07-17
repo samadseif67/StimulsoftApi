@@ -19,6 +19,17 @@ kubectl exec deploy/cachexample -c cach1 --killall5  برای از بین برد
 
 kubectl get pod p1 hostpath -o yaml  //نمایش فایل یملی که این پاد را ساخته
 kubectl get pv //گرقتن تمام ولیوم ها 
+
+kubectl apply -f HelloWorl.yaml  برای اجرای یک فایل یمل
+kubectl apply -f newfolder1/  برای اجرای تمام فایل های یمل در مسیر نیوفولدریک
+
+kubectl delete -f HelloWorl.yaml  برای حذف اجرای یک فایل یمل
+kubectl delete -f newfolder1/  برای حذف اجرای تمام فایل های یمل در مسیر نیوفولدریک
+
+
+kubectl get rs   برای اینکه متوجه شویم داخل هر دپلویمنت چند تا پاد وجود دارد
+
+kubectl top pod   برای اینکه متوجه شویم هر پاد چقدر سی پیو و حافظه مصرف میکند
 //******************************************************************************************************************************
 ایجاد یک فایل یمل که داخل آن یم پاد تعریف کرده ایم
 
@@ -548,10 +559,235 @@ spec:
     type: DirectoryOrCreate
 
 
+//*****************************************************************
+ 
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-randomapi-external
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain  #این ولیوم با حذف پاد از بین نمی رود
+  hostPath:
+    path: /run/desktop/mnt/host/f/volumes-randomapi-external
+    type: DirectoryOrCreate
+
+--- #برای اینکه بتوانیم چند تا محتوای فایل یمل را کنار همدیگر قرار بدهیم
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-randomapi-external
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeName: pv-randomapi-external
+
+--- #برای اینکه بتوانیم چند تا محتوای فایل یمل را کنار همدیگر قرار بدهیم
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: randomapi-external-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: randomapi-external
+  template:
+    metadata:
+      labels:
+        app: randomapi-external
+    spec:
+      containers:
+        - name: random-external-container 
+          image: apiexternal1   
+          imagePullPolicy: Never 
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: volumes-randomapi-external
+              mountPath: /app
+           
+      volumes:
+        - name: volumes-randomapi-external
+          persistentVolumeClaim:
+            claimName: pvc-randomapi-external
+
+
+//************************************************************************************************
+برای تخصیص منابع به هر پاد به چه صورت عمل میکنیم
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: randomapi-external-deployment
+spec:
+  replicas: 1 #برای اینکه مشخص کنیم چند تا پاد داخل این دپلوی منت داشته باشیم
+  selector:
+    matchLabels:
+      app: randomapi-external
+  template:
+    metadata:
+      labels:
+        app: randomapi-external
+    spec:
+      containers:
+        - name: random-external-container 
+          image: apiexternal1   
+          imagePullPolicy: Never #برای اینکه بتوانیم از ایمیج های خود داکر سیستم خودمان استفاده کنیم
+          ports:
+            - containerPort: 80
+          resources:   #در این قسمت منابع را مشخص میکنیم
+            requests:  #این بخش حداقل منابع مورد نیاز کانتینر را مشخص میکند.
+              memory: "64Mi"
+              cpu: "250m"
+            limits:  #این بخش حداکثر منابعی که کانتینر میتواند استفاده کند را مشخص میکند
+              memory: "128Mi"
+              cpu: "500m" 
+
+
+---  #برای اینکه بتوانیم میحتوای دو تا فایل یمل را داخل یک فایل یمل قرار بدهیم
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: randomapi-external-service  # Replace with your service name
+spec:
+  selector:
+    app: randomapi-external # در این قسمت مشخص میکنیم که چه پادهای با چه لبیلی را مدیریت کند
+  ports:
+    - port: 8045          # Service port
+      targetPort: 80  # همان پورت کانینر که داخل پاد تعریف میکنیم 
+  type: LoadBalancer
+ 
 
 
 
+//***************************************************************************************************************************
+ 
+ برای ایجاد چند تا کانتینر درون یک پاد 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: randomapi-external-deployment
+spec:
+  replicas: 1 #برای اینکه مشخص کنیم چند تا پاد داخل این دپلوی منت داشته باشیم
+  selector:
+    matchLabels:
+      app: randomapi-external
+  template:
+    metadata:
+      labels:
+        app: randomapi-external
+    spec:
+      containers:
+        - name: random-external-container 
+          image: apiexternal1   
+          imagePullPolicy: Never #برای اینکه بتوانیم از ایمیج های خود داکر سیستم خودمان استفاده کنیم
+          ports:
+            - containerPort: 80
+          resources:   #در این قسمت منابع را مشخص میکنیم
+            requests:  #این بخش حداقل منابع مورد نیاز کانتینر را مشخص میکند.
+              memory: "64Mi"
+              cpu: "250m"
+            limits:  #این بخش حداکثر منابعی که کانتینر میتواند استفاده کند را مشخص میکند
+              memory: "128Mi"
+              cpu: "500m" 
+
+        - name: random-external-container2 
+          image: apiexternal2   
+          imagePullPolicy: Never #برای اینکه بتوانیم از ایمیج های خود داکر سیستم خودمان استفاده کنیم
+          ports:
+            - containerPort: 81
 
 
+---  #برای اینکه بتوانیم میحتوای دو تا فایل یمل را داخل یک فایل یمل قرار بدهیم
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: randomapi-external-service  # Replace with your service name
+spec:
+  selector:
+    app: randomapi-external # در این قسمت مشخص میکنیم که چه پادهای با چه لبیلی را مدیریت کند
+  ports:
+    - port: 8045          # Service port
+      targetPort: 80  # همان پورت کانینر که داخل پاد تعریف میکنیم 
+  type: LoadBalancer
 
 
+---  #برای اینکه بتوانیم میحتوای دو تا فایل یمل را داخل یک فایل یمل قرار بدهیم
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: randomapi-external-service1  # Replace with your service name
+spec:
+  selector:
+    app: randomapi-external # در این قسمت مشخص میکنیم که چه پادهای با چه لبیلی را مدیریت کند
+  ports:
+    - port: 8046          # Service port
+      targetPort: 81  # همان پورت کانینر که داخل پاد تعریف میکنیم 
+  type: LoadBalancer
+ 
+ 
+//**************************************************************************************************
+تفاوت در ایجاد کانتینر های زیر در چه چیزی هست
+initcontainers:ابتدا این قسمت اجرا میشود تا فایل های اولیه را برای کانتینر های دیگر آماده کند
+containers:
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-with-init
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      # تعریف InitContainerها (مرحله آماده‌سازی)
+      initContainers: #اول این قسمت اجرا میشود
+      - name: download-assets
+        image: busybox:latest
+        command: ['sh', '-c', 'wget https://example.com/config.tar.gz -O /assets/config.tar.gz && tar -xzf /assets/config.tar.gz -C /assets']
+        volumeMounts:
+        - name: app-data
+          mountPath: "/assets"
+      
+      # تعریف Container اصلی
+      containers: # بعد از اجرای قسمت اول این قسمت اجرا میشود
+      - name: webapp
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: app-data
+          mountPath: "/usr/share/nginx/html"
+          readOnly: true
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+      
+      # تعریف Volume مشترک
+      volumes:
+      - name: app-data
+        emptyDir: {}
