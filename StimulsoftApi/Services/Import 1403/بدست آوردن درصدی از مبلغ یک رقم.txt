@@ -1,0 +1,14 @@
+public double GetPersentFromPrice(double Price, double Persent)
+{
+    double NewPrice = Math.Round(((Price * Persent) / 100), 2);
+    Int64 NumberNewPrice = Convert.ToInt64(NewPrice);
+
+    if (NewPrice == NumberNewPrice)//برای اینکه قسمت اعشاری دو تا صفر حذف شود
+    {
+        NewPrice = NumberNewPrice;
+    }
+
+
+    return NewPrice;
+
+}

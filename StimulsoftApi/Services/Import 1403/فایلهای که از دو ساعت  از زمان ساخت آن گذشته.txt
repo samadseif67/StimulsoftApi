@@ -1,0 +1,17 @@
+ string path = @"~/App_Data/WebDAV/Storage/DAV/";
+ var URlFileDocx = System.IO.Directory.GetFiles(Server.MapPath(path), "*.doc");
+ string[] FileNameUrl = new string[URlFileDocx.Count()];
+
+ for (int i = 0; i < URlFileDocx.Count(); i++)
+ {
+     FileNameUrl[i] = System.IO.Path.GetFileName(URlFileDocx[i]);
+     string DirectionFile = path + FileNameUrl[i];
+     var DateTime1 = System.IO.File.GetLastWriteTime(Server.MapPath(DirectionFile));
+     var DateTomNow = DateTime.Now;
+     int Hour = (DateTomNow - DateTime1).Hours;
+     if (Hour > 2)
+     {
+         System.IO.File.Delete(Server.MapPath(path + FileNameUrl[i]));
+     }
+
+ }
