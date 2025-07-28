@@ -1,0 +1,10 @@
+ALTER FUNCTION [dbo].[CorrectString]
+(
+	@string nvarchar(250)
+)
+RETURNS nvarchar(250)
+AS
+BEGIN
+	set @string = replace(replace(replace(@string, N'ی', N'ي'), N'ک', N'ك'), ' ', '')
+return @string;
+END

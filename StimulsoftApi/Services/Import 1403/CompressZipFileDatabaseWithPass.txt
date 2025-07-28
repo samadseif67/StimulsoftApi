@@ -1,0 +1,346 @@
+  public void CompressZipFileDatabaseWithPass(string Filename, string NumberRandom, string Pass)
+  {
+
+      try
+      {
+          ClsConvertFileToZip ClsZip = new ClsConvertFileToZip();
+          string FileNameIntoFileZip = Filename + "_" + NumberRandom + ".bak";
+          string path = System.Web.HttpContext.Current.Server.MapPath("~/BackupFiles/" + Filename + "_" + NumberRandom + ".bak");
+          string PathFileName = "/BackupFiles/" + Filename + "_" + NumberRandom + ".bak";
+          string PathFileNameZip = "/BackupFiles/" + Filename + "_" + NumberRandom + ".Zip";
+          bool ExistFile = System.IO.File.Exists(path);
+          if (ExistFile == true)
+          {
+              ClsZip.ConvertFileToZip(PathFileName, PathFileNameZip, FileNameIntoFileZip, Pass);
+              System.IO.File.Delete(path);
+          }
+      }
+      catch (Exception ex)
+      {
+
+          throw ex;
+      }
+
+  }
+
+
+//************************************************************************************************************************
+
+  public class ClsConvertFileToZip : Controller
+  {
+
+
+      public void ConvertFileToZip(string PathFileNameInput, string PathFileNameOutExtensionZip, string FileNameIntoFileZipWithExtension, string PassWordFile)
+      {
+
+          //PathFileNameInput مسیر فایل به همراه نام فایل و پسوند
+          // PathFileNameInput = "/FileUnZip/AAA.txt";
+
+          //PathFileNameOutExtensionZip اسم فایل زیب به همراه آدرس آن
+          //PathFileNameOutExtensionZip = "/FileZip/rrr.zip";
+
+
+          // FileNameIntoFileZipWithExtension فقط اسم فایلی که قرار است در فایل زیپ قرار گیرد
+          // FileNameIntoFileZipWithExtension = "BBB.txt";
+
+
+
+
+          string PathFileEnter = System.Web.HttpContext.Current.Server.MapPath(PathFileNameInput);
+          string PathFileOutPut = System.Web.HttpContext.Current.Server.MapPath(PathFileNameOutExtensionZip);
+
+
+
+
+          var bytes = System.IO.File.ReadAllBytes(PathFileEnter);
+
+
+
+          //************************************************************************************************
+
+          //DivitionFile();
+          
+
+          
+          //********************************************************************************************
+
+
+          using (MemoryStream ms = new MemoryStream(bytes))
+          {
+              var result = CreateToMemoryStream(ms, FileNameIntoFileZipWithExtension, PassWordFile);
+              using (var outputStream = System.IO.File.Create(PathFileOutPut))
+              {
+                  result.WriteTo(outputStream);
+              }
+          }
+      }
+
+
+
+      public void DivitionFile()
+      {
+          string Filename = "ContractsControl";
+          string NumberRandom = "06fcd2d8-9e8a-4f0b-9398-26643c609099-1403-02-23--12-15-27-PM";
+          string PathFileNameInput = "/BackupFiles/" + Filename + "_" + NumberRandom + ".bak";
+          string filePath = System.Web.HttpContext.Current.Server.MapPath(PathFileNameInput);
+
+
+
+          int partSize = 1024*1024*1024; // Size of each part in bytes
+
+
+
+
+          using (FileStream fileStream = new FileStream(filePath, FileMode.Open))
+          {
+
+
+              int Counter = 1;
+              Int64 LengthFile = 0;
+              for (Int64 i = 0; i < fileStream.Length; i += partSize)
+              {
+
+                 // partSize = (i > fileStream.Length) ? (Convert.ToInt32( i- fileStream.Length)) : partSize;
+                  
+
+                  byte[] buffer = new byte[partSize];
+                  fileStream.Read(buffer, 0, partSize);
+               
+                  string partFilePath = $"/BackupFiles/file_part_{i / partSize}.bak";
+                  string filePath1 = System.Web.HttpContext.Current.Server.MapPath(partFilePath);
+                  using (FileStream partFileStream = new FileStream(filePath1, FileMode.Create))
+                  {
+                      partFileStream.Write(buffer, 0, partSize);
+                  }
+
+                  Counter = Counter + 1;
+                  LengthFile = (Counter * partSize);
+                  
+                  if(LengthFile> fileStream.Length || LengthFile<0)
+                  {
+                      LengthFile = LengthFile < 0 ? (LengthFile * -1) : LengthFile;
+                      if(LengthFile > fileStream.Length)
+                      {
+                          partSize = Convert.ToInt32(LengthFile - fileStream.Length);
+                      }                       
+                  }
+
+              }
+          }
+      }
+
+
+
+
+      private byte[] ReadFileBytes5(string filePath)
+      {
+          using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+          {
+              using (BinaryReader reader = new BinaryReader(fs))
+              {
+                  long length = fs.Length;
+                  byte[] data = new byte[length];
+                  reader.Read(data, 0, (int)length);
+                  return data;
+              }
+          }
+      }
+
+      private byte[] ReadFileBytes4(string filePath)
+      {
+          using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+          {
+              using (MemoryStream ms = new MemoryStream())
+              {
+                  using (BinaryWriter writer = new BinaryWriter(ms))
+                  {
+                      byte[] buffer = new byte[4096];
+                      int bytesRead;
+                      while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                      {
+                          writer.Write(buffer, 0, bytesRead);
+                      }
+                  }
+                  return ms.ToArray();
+              }
+          }
+      }
+
+
+
+
+
+
+
+      private byte[] ReadFileBytes3(string filePath)
+      {
+
+          using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+          {
+              using (MemoryStream ms = new MemoryStream())
+              {
+                  byte[] buffer = new byte[4096];
+                  int bytesRead;
+                  while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                  {
+                      ms.Write(buffer, 0, bytesRead);
+                  }
+                  return ms.ToArray();
+              }
+          }
+      }
+
+
+
+
+
+
+
+
+
+
+      private MemoryStream ReadFileBytes2(string filePath)
+      {
+          using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+          {
+              using (MemoryStream ms = new MemoryStream())
+              {
+                  fs.CopyTo(ms);
+                  return ms;
+              }
+              
+          }
+      }
+
+
+
+
+      private byte[] ReadFileBytes1(string filePath)
+      {
+          try
+          {
+              using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+              {
+                  byte[] buffer = new byte[4096];
+                  byte[] fileBytes = new byte[fs.Length];
+                  int bytesRead;
+                  int totalBytesRead = 0;
+
+                  while ((bytesRead = fs.Read(buffer, 0, buffer.Length)) > 0)
+                  {
+                      Buffer.BlockCopy(buffer, 0, fileBytes, totalBytesRead, bytesRead);
+                      totalBytesRead += bytesRead;
+                  }
+
+                  return fileBytes;
+              }
+          }
+          catch (Exception ex)
+          {
+
+              throw;
+          }
+
+      }
+
+
+
+      private byte[] ConvertPathFileToByte(string PathFileEnter1)
+      {
+          string filepath = PathFileEnter1;
+          Stream stream1 = new System.IO.MemoryStream();
+          using (var stream = new FileStream(filepath, FileMode.Open, FileAccess.Read))
+          {
+              stream.CopyTo(Response.OutputStream);
+          }
+          byte[] ReadAllFile = ReadFully(Response.OutputStream);
+          return ReadAllFile;
+      }
+
+      private byte[] ReadFully(Stream input)
+      {
+          byte[] buffer = new byte[16 * 1024];
+          using (MemoryStream ms = new MemoryStream())
+          {
+              int read;
+              while ((read = input.Read(buffer, 0, buffer.Length)) > 0)
+              {
+                  ms.Write(buffer, 0, read);
+              }
+              return ms.ToArray();
+          }
+      }
+
+
+
+
+
+      private MemoryStream CreateToMemoryStream(MemoryStream memStreamIn, string zipEntryName, string PassWordFile)
+      {
+          MemoryStream outputMemStream = new MemoryStream();
+          ZipOutputStream zipStream = new ZipOutputStream(outputMemStream);
+
+          zipStream.SetLevel(3); //0-9, 9 being the highest level of compression
+          zipStream.Password = PassWordFile;
+
+          ZipEntry newEntry = new ZipEntry(zipEntryName);
+          newEntry.DateTime = DateTime.Now;
+
+          zipStream.PutNextEntry(newEntry);
+
+          StreamUtils.Copy(memStreamIn, zipStream, new byte[4096]);
+          zipStream.CloseEntry();
+
+          zipStream.IsStreamOwner = false;    // False stops the Close also Closing the underlying stream.
+          zipStream.Close();          // Must finish the ZipOutputStream before using outputMemStream.
+
+          outputMemStream.Position = 0;
+          return outputMemStream;
+
+          // Alternative outputs:
+          // ToArray is the cleaner and easiest to use correctly with the penalty of duplicating allocated memory.
+          byte[] byteArrayOut = outputMemStream.ToArray();
+
+          // GetBuffer returns a raw buffer raw and so you need to account for the true length yourself.
+          byte[] byteArrayOut1 = outputMemStream.GetBuffer();
+          long len = outputMemStream.Length;
+      }
+
+
+
+      public static void ZipDirectoryKeepRelativeSubfolder(string zipFilePath, string directoryToZip)
+      {
+         
+          using (var s = new ZipOutputStream(System.IO.File.Create(zipFilePath)))
+          {
+              s.SetLevel(9);// 0 - store only to 9 - means best compression
+
+              var buffer = new byte[4096];
+
+              var filenames = Directory.GetFiles(directoryToZip, "*.*", SearchOption.AllDirectories);
+              foreach (var file in filenames)
+              {
+                  var relativePath = file.Substring(directoryToZip.Length).TrimStart('\\');
+                  var entry = new ZipEntry(relativePath);
+                  entry.DateTime = DateTime.Now;
+                  s.PutNextEntry(entry);
+
+                  using (var fs =System.IO.File.OpenRead(file))
+                  {
+                      int sourceBytes;
+                      do
+                      {
+                          sourceBytes = fs.Read(buffer, 0, buffer.Length);
+                          s.Write(buffer, 0, sourceBytes);
+                      } while (sourceBytes > 0);
+                  }
+              }
+              s.Finish();
+              s.Close();
+          }
+      }
+
+
+
+
+  }

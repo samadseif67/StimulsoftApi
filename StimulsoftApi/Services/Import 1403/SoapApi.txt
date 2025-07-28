@@ -1,0 +1,74 @@
+             
+
+
+   HttpWebRequest request = CreateSOAPWebRequest();
+
+                XmlDocument SOAPReqBody = new XmlDocument();
+                //SOAP Body Request    
+                SOAPReqBody.LoadXml(@"<soapenv:Envelope xmlns:soapenv=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:impl=""http://impl.salam.com/"">
+            <soapenv:Header/>
+            <soapenv:Body>
+           <impl:startProcessWithDetails>         
+           <!--Optional:-->
+          <arg0>pass:HEKMAT891063089**</arg0>
+          <!--Optional:-->
+          <arg1>
+            <!--Optional:-->
+            <userBranchCodeIfExists>" + BranchCode + @"</userBranchCodeIfExists>
+            <!--Optional:-->
+            <userCodeIfExists>17</userCodeIfExists>
+            <!--Optional:-->
+                       
+            <processDefinitionId>processZemantletter:1:a2wqse-f4ec-11ea-b861-00505469b789a</processDefinitionId>
+            <!--Optional:-->
+            <variables>
+
+           {""LoanNumber"":""" + WarranttyCode + @"""}
+            </variables>
+         </arg1>
+      </impl:startProcessWithDetails>
+   </soapenv:Body>
+</soapenv:Envelope>");
+
+
+
+
+
+  List<ItemWebServiceHekmat> LstInfo = new List<ItemWebServiceHekmat>();
+  using (Stream stream = request.GetRequestStream())
+  {
+
+      SOAPReqBody.Save(stream);
+  }
+ 
+  using (WebResponse Serviceres = request.GetResponse())
+  {
+
+      using (StreamReader rd = new StreamReader(Serviceres.GetResponseStream()))
+      {
+          //reading stream    
+          var ServiceResult = rd.ReadToEnd();
+
+          //writting stream result on console    
+          var reader = new XmlTextReader(new StringReader(ServiceResult));
+
+          var doc = XDocument.Parse((ServiceResult));
+
+
+          XmlDocument doc1 = new XmlDocument();
+
+
+
+          doc1.LoadXml(ServiceResult);
+          XmlNodeList el = doc1.GetElementsByTagName("value");
+          string InnerText = el[0].InnerText;
+          // InnerText = InnerText.Replace(", ", ",").Replace("=", "':'").Replace("{", "{'").Replace(",", "','").Replace("}", "'}");
+
+          LstInfo = JsonConvert.DeserializeObject<List<ItemWebServiceHekmat>>(InnerText);
+
+
+      }
+  }
+
+
+  return LstInfo;

@@ -1,0 +1,12 @@
+ 
+ALTER function [dbo].[FnSpliteDate](@DateStr nvarchar(10)='00961006')
+returns nvarchar(10) 
+ as
+begin
+declare 
+@IndexTheLetter int=0
+set @IndexTheLetter= (CHARINDEX('/',@DateStr))
+if(@IndexTheLetter=0)
+set @DateStr= '13'+ SUBSTRING(@DateStr,3,2)+'/'+SUBSTRING(@DateStr,5,2)+'/'+SUBSTRING(@DateStr,7,2);
+return @DateStr
+end

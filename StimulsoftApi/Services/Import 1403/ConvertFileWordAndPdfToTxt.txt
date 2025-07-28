@@ -1,0 +1,49 @@
+        public void ConvertFileWordAndPdfToTxt()
+        {
+
+            var QTestFiles = context.TestFiles.Where(x => x.IsDelete == false && x.FileContentTxt == null).ToList();
+            string MembershipID = Convert.ToString(Session["MembershipID"]);
+            if (QTestFiles.Count() != 0)
+            {
+                foreach (var item in QTestFiles)
+                {
+                    if (item.ExtensionID == 1)//اگر فایل ورد است
+                    {
+                        Spire.Doc.Document document = new Spire.Doc.Document();
+                        string Path = Server.MapPath("~/FileText/" + MembershipID + "+" + Convert.ToString(item.ID) + ".doc");
+                        System.IO.File.WriteAllBytes(Path, item.FileContent);
+                        document.LoadFromFile(Path);
+                        document.SaveToFile(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + "TestOnly.txt"), FileFormat.Txt);
+                        byte[] ByteFileText = System.IO.File.ReadAllBytes(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + "TestOnly.txt"));
+                        System.IO.File.Delete(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + "TestOnly.txt"));
+                        System.IO.File.Delete(Path);
+                        item.FileContentTxt = ByteFileText;
+                    }
+                    if (item.ExtensionID == 2)//اگر فایل پی دی اف است 
+                    {
+                        System.IO.File.WriteAllBytes(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + ".pdf"), item.FileContent);
+                        PdfReader reader = new PdfReader(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + ".pdf"));
+                        StringBuilder Text = new StringBuilder();
+                        for (int i = 1; i <= reader.NumberOfPages; i++)
+                        {
+                            Text.Append(PdfTextExtractor.GetTextFromPage(reader, i));
+                        }
+                        var TextString = Text.ToString();
+                        char[] ConvertTextStringTOChar = TextString.ToCharArray();
+                        Array.Reverse(ConvertTextStringTOChar);
+                        var Str = new string(ConvertTextStringTOChar);
+                        System.IO.File.WriteAllText(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + ".txt"), Str);
+                        byte[] ByteFileText = System.IO.File.ReadAllBytes(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + ".txt"));
+                        reader.Close();
+                        reader.Dispose();
+                        System.IO.File.Delete(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + ".pdf"));
+                        System.IO.File.Delete(Server.MapPath("~/FileText/" + MembershipID + Convert.ToString(item.ID) + ".txt"));
+                        item.FileContentTxt = ByteFileText;
+                    }
+
+                }
+
+                context.SaveChanges();
+            }
+
+        }

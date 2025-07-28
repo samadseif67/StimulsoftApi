@@ -1,0 +1,103 @@
+
+ System.Web.Security.FormsAuthentication.SetAuthCookie(result.UserName, false);
+
+
+//******************************************************************************************************
+
+
+
+System.Web.Security.FormsAuthentication.SignOut();
+
+
+//*******************************************************************************************************
+ public static class Cryptography
+ {
+     public const string PublicKey = "<BitStrength>1024</BitStrength><RSAKeyValue><Modulus>1aZTasqZem3DU1EbEcjkq4NUQokiUwJj8Z7RaNIfTjRS5P0+IlmKH74AWSN28Ggx3kk3oJV/tzeof/h82bVarYE6W3jwIzsGYCE/DRc4evbXM72AJOo9K27KuBKHpK0PKgayBnAcUm5E6KteEv9SIbIhm+AKMeTDKrE/9364Lis=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+
+     public static string Encrypt(string plainText)
+     {
+         string encryptedText = null;
+         if (plainText.Length != 0)
+         {
+             string publicKey = PublicKey;
+             if (publicKey != null)
+             {
+                 string bitStrengthString = publicKey.Substring(0, publicKey.IndexOf("</BitStrength>") + 14);
+                 publicKey = publicKey.Replace(bitStrengthString, "");
+                 int bitStrength = Convert.ToInt32(bitStrengthString.Replace("<BitStrength>", "").Replace("</BitStrength>", ""));
+                 if (publicKey != null)
+                 {
+                     try
+                     {
+                         
+                         encryptedText = EncryptString(plainText, bitStrength, publicKey);
+
+                         return encryptedText;
+                     }
+                     catch (CryptographicException CEx)
+                     {
+                         
+                     }
+                     catch (Exception Ex)
+                     {
+                         
+                     }
+                 }
+             }
+             else encryptedText = null;
+         }
+         else
+         {
+             encryptedText = null;
+              
+         }
+         return encryptedText;
+     }
+
+     public static string Decrypt(string encryptedText)
+     {
+         if (encryptedText.Length != 0)
+         {
+             string privateKey = "";
+             using (var context = new NewContractsControlEntities())
+                 privateKey = context.Key().First();
+
+             string bitStrengthString = privateKey.Substring(0, privateKey.IndexOf("</BitStrength>") + 14);
+             privateKey = privateKey.Replace(bitStrengthString, "");
+             int bitStrength = Convert.ToInt32(bitStrengthString.Replace("<BitStrength>", "").Replace("</BitStrength>", ""));
+             if (privateKey != null)
+             {
+                 try
+                 {
+                     encryptedText = DecryptString(encryptedText, bitStrength, privateKey);
+                 }
+                 catch (CryptographicException CEx)
+                 {
+                      
+                 }
+                 catch (Exception Ex)
+                 {
+                    
+                 }
+             }
+         }
+         else
+         {
+             
+         }
+
+         return encryptedText;
+     }
+
+}
+
+//**********************************************************************
+create PROCEDURE [dbo].[Key]
+AS
+begin
+select '<BitStrength>1024</BitStrength><RSAKeyValue><Modulus>1aZTasqZem3DU1EbEcjkq4NUQokiUwJj8Z7RaNIfTjRS5P0+IlmKH74AWSN28Ggx3kk3oJV/tzeof/h82bVarYE6W3jwIzsGYCE/DRc4evbXM72AJOo9K27KuBKHpK0PKgayBnAcUm5E6KteEv9SIbIhm+AKMeTDKrE/9364Lis=</Modulus><Exponent>AQAB</Exponent><P>8zh1jff0SowcLoHYpDVXsgszTKLCJn9RRrNKrpj6kkcB5zHmpumbBiECcH9ne7K1yudK0fdezl8eH17OeeYdSw==</P><Q>4OAclPhQmm8wVKpgIfwWYrJcZ6PgHWLaUG5+hQR2BnB5kCneBXMGGyKnPXlLuAEvyY+P+fICOYGGadu3rvAGoQ==</Q><DP>0/FOFwGMIm4HnMtPkoBdQ+wYrt5hmxR1KcvQ92ada1xvHx1P5gFJMsUPECMldRhc7Ewy2dbbCbC/WgzOllDdEw==</DP><DQ>RL0c34icEukEDA1cf2bwbND6oA+e1Ty/YTC1afG4JjXBYwj5Pg8wAaFxH8BxHdj3A5TnvM52UZ+/N6KbHlVuoQ==</DQ><InverseQ>PrHekOV8UKjEC+KZpDSYCradlDno7wq/Z3KM6IrBq/PY2Ve4c8osfHb414Gy2iq2++T/vzopF8nQQmU6Rn8DXA==</InverseQ><D>MElzOQOpRH5iUwZVs+NPq2P3O0J7O3+izw0yDxrOcIJq6c5CqMjL6viqY3sceqFSBAdQRz8Cqootzx5+OUY/w+VRaYvCVKHlxv1HDC10Bnljiit7kAfBMWmwiKxhCnw+hPloaVywioX47h+fNdNzY+rgmNrPv+TsXZ3V/ROIDwE=</D></RSAKeyValue>' PrivateKey
+end
+
+
+
+

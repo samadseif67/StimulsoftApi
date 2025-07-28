@@ -1,0 +1,2 @@
+SELECT @ColumnName= ISNULL(@ColumnName + ',','')
+         + QUOTENAME(Title + '/' + cast(PositionNo as nvarchar))

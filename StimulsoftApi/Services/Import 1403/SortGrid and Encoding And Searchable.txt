@@ -1,0 +1,381 @@
+   #region SortGrid
+
+
+   public interface IRepositoryFilter<T> where T : class
+   {
+       IQueryable<T> FilterList(IQueryable<T> filtered, string multiSearchList);
+   }
+
+   public class RepositoryFilter<T> : IRepositoryFilter<T> where T : class
+   {
+       private readonly DbSet<T> entities;
+       public RepositoryFilter(DbContext context)
+       {
+           entities = context.Set<T>();
+       }
+
+       public IQueryable<T> FilterList(IQueryable<T> filtered, string multiSearchList)
+       {
+           Utility service = new Utility();
+
+           List<MultiColumnSearchModel> multiColumnSearchList = new List<MultiColumnSearchModel>();
+           if (multiSearchList != null)
+           {
+               multiColumnSearchList = JsonConvert.DeserializeObject<List<MultiColumnSearchModel>>(multiSearchList);
+               multiColumnSearchList = JsonConvert.DeserializeObject<List<MultiColumnSearchModel>>(multiSearchList);
+               multiColumnSearchList = multiColumnSearchList == null ? new List<MultiColumnSearchModel>() : multiColumnSearchList;
+           }
+
+           List<T> resultList = new List<T>();
+
+           foreach (var item in multiColumnSearchList)
+           {
+               var searchOper = item.Operator.Trim();
+               var searchField = item.Column.Trim();
+               var searchString = item.Data.Trim();
+
+               filtered = resultList.Count() == 0 ? filtered : resultList.ToList().AsQueryable();
+
+               if (searchOper.Length == 0 || searchField.Length == 0 || searchString.Length == 0)
+               {
+                   continue;
+               }
+
+               #region cn //شامل است
+
+               if (searchOper == "cn")//شامل است
+               {
+
+                   filtered = filtered.ToList().AsQueryable().Where(s =>
+                       (typeof(T).GetProperty(service.CorrectStringWithoutSpace(searchField)).GetValue(s, null) == null) ? false :
+                           typeof(T).GetProperty(service.CorrectStringWithoutSpace(searchField)).GetValue(s, null)
+                           .ToString().Contains(service.CorrectStringWithoutSpace(searchString)));
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion cn
+
+               #region nc //شامل نیست
+
+               if (searchOper == "nc")//شامل نیست
+               {
+                   var filtered1 = filtered.ToList().AsQueryable().Where(s =>
+                       (typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null) == null) ? false :
+                           typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null)
+                           .ToString().Contains(service.CorrectString(searchString)));
+                   filtered = filtered.Except(filtered1);
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion nc
+
+
+
+               #region eq //برابر است
+
+               if (searchOper == "eq")//برابر است
+               {
+                   filtered = filtered.ToList().AsQueryable().Where(s =>
+                      (typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null) == null) ? false :
+                          typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null)
+                          .ToString().Equals(service.CorrectString(searchString)));
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion eq
+
+               #region ne //برابر نیست
+
+               if (searchOper == "ne")//برابر نیست
+               {
+                   filtered = filtered.ToList().AsQueryable().Where(s =>
+                     (typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null) == null) ? false :
+                         typeof(T).GetProperty(service.CorrectString(searchField)).GetValue(s, null)
+                         .ToString() != (service.CorrectString(searchString)));
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion ne
+
+
+
+               #region bw //شروع میشود
+
+               if (searchOper == "bw")// شروع میشود  
+               {
+                   filtered = filtered.ToList().AsQueryable().Where(s =>
+                     (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                         typeof(T).GetProperty(searchField).GetValue(s, null)
+                         .ToString().StartsWith(service.CorrectString(searchString)));
+
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion bw
+
+               #region bn //شروع نمیشود
+
+               if (searchOper == "bn")// شروع نمیشود  
+               {
+                   var filtered_bn = filtered.ToList().AsQueryable().Where(s =>
+                     (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                         typeof(T).GetProperty(searchField).GetValue(s, null)
+                         .ToString().StartsWith(service.CorrectString(searchString)));
+                   filtered = filtered.ToList().AsQueryable().Except(filtered_bn);
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion bn
+
+
+
+               #region ew //پایانش تمام میشود
+
+               if (searchOper == "ew")//پایانش تمام میشود   
+               {
+                   filtered = filtered.ToList().AsQueryable().Where(s =>
+                     (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                         typeof(T).GetProperty(searchField).GetValue(s, null)
+                         .ToString().EndsWith(service.CorrectString(searchString)));
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion ew
+
+               #region en // پایان شامل نیست
+
+               if (searchOper == "en")//  پایان شامل نیست    
+               {
+                   var filtered_en = filtered.ToList().AsQueryable().Where(s =>
+                     (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                         typeof(T).GetProperty(searchField).GetValue(s, null)
+                         .ToString().EndsWith(service.CorrectString(searchString)));
+                   filtered = filtered.Except(filtered_en);
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion en
+
+
+
+               #region small // کوچکتر 
+
+               if (searchOper == "small")
+               {
+                   string typeVariable = typeof(T).GetProperties().FirstOrDefault(property => property.Name == searchField).PropertyType.Name;
+                   if (typeVariable == "Int32" || typeVariable == "double")
+                   {
+                       filtered = filtered.ToList().AsQueryable().Where(s =>
+                      (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                       Convert.ToInt32(typeof(T).GetProperty(searchField).GetValue(s, null).ToString()) < (Convert.ToInt32(searchString))
+                      );
+                   }
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion small
+
+               #region smallequal // کوچکتر یا مساوی با
+
+               if (searchOper == "smallequal")
+               {
+                   string typeVariable = typeof(T).GetProperties().FirstOrDefault(property => property.Name == searchField).PropertyType.Name;
+                   if (typeVariable == "Int32" || typeVariable == "double")
+                   {
+                       filtered = filtered.ToList().AsQueryable().Where(s =>
+                      (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                       Convert.ToInt32(typeof(T).GetProperty(searchField).GetValue(s, null).ToString()) <= (Convert.ToInt32(searchString))
+                      );
+                   }
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion smallequal
+
+
+
+               #region Large // بزرگتر
+
+               if (searchOper == "large")
+               {
+                   string typeVariable = typeof(T).GetProperties().FirstOrDefault(property => property.Name == searchField).PropertyType.Name;
+                   if (typeVariable == "Int32" || typeVariable == "double")
+                   {
+                       filtered = filtered.ToList().AsQueryable().Where(s =>
+                      (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                       Convert.ToInt32(typeof(T).GetProperty(searchField).GetValue(s, null).ToString()) > (Convert.ToInt32(searchString))
+                      );
+                   }
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion Large // بزرگتر
+
+               #region largeequal // بزرگتر یا مساوی با
+
+               if (searchOper == "largeequal")
+               {
+                   string typeVariable = typeof(T).GetProperties().FirstOrDefault(property => property.Name == searchField).PropertyType.Name;
+                   if (typeVariable == "Int32" || typeVariable == "double")
+                   {
+                       filtered = filtered.ToList().AsQueryable().Where(s =>
+                      (typeof(T).GetProperty(searchField).GetValue(s, null) == null) ? false :
+                       Convert.ToInt32(typeof(T).GetProperty(searchField).GetValue(s, null).ToString()) >= (Convert.ToInt32(searchString))
+                      );
+                   }
+
+                   resultList.RemoveRange(0, resultList.Count());
+                   resultList.AddRange(filtered);
+               }
+
+               #endregion Large // بزرگتر یا مساوی با
+
+
+               filtered = resultList.Count() == 0 ? filtered : resultList.ToList().AsQueryable();
+           }
+
+           return filtered;
+       }
+   }
+
+   public IQueryable<T> SortIQueryable<T>(IQueryable<T> data, string fieldName, string sortOrder)
+   {
+       if (string.IsNullOrWhiteSpace(fieldName)) return data;
+       if (string.IsNullOrWhiteSpace(sortOrder)) return data;
+
+       var param = Expression.Parameter(typeof(T), "i");
+       Expression conversion = Expression.Convert(Expression.Property(param, fieldName), typeof(object));
+       var mySortExpression = Expression.Lambda<Func<T, object>>(conversion, param);
+
+       return (sortOrder == "desc") ? data.OrderByDescending(mySortExpression)
+           : data.OrderBy(mySortExpression);
+   }
+
+   public string CorrectString(string myText)
+   {
+       return myText.Replace(" ", "").Replace('ی', 'ي').Replace('ک', 'ك').Replace("\t", " ");
+   }
+
+   public string CorrectStringWithoutSpace(string myText)
+   {
+       return myText.Replace('ی', 'ي').Replace('ک', 'ك').Replace("\t", " ");
+   }
+
+
+
+   #endregion SortGrid
+
+
+
+   //***********************************************************************************************************************************
+
+    
+   #region Encodeing
+   private string JavaScriptStringEncode(string Input)
+   {
+       string Result = System.Web.HttpUtility.JavaScriptStringEncode(Input);
+       return Result;
+   }
+   private string HtmlEncode(string Input)
+   {
+       string Result = System.Web.HttpUtility.HtmlEncode(Input);
+       return Result;
+   }
+   private string UrlEncode(string Input)
+   {
+       string Result = System.Web.HttpUtility.UrlEncode(Input);
+       return Result;
+   }
+
+   public string JavaScriptAndHtmlStringEncode(string Input)
+   {
+       var Result = HtmlEncode(JavaScriptStringEncode(Input));
+       return Result;
+   }
+
+   
+   public List<T> GetJavaScriptAndHtmlStringEncodeLst<T>(List<T> ObjNew)
+   {
+
+       List<T> Result = new List<T>();
+       foreach (var x in ObjNew)
+       {
+           var Find = GetJavaScriptAndHtmlStringEncodeObj<T>(x);
+           Result.Add(Find);
+       }
+       return Result;
+   }
+
+   
+   public T GetJavaScriptAndHtmlStringEncodeObj<T>(T ObjNew)
+   {
+       foreach (var x in ObjNew.GetType().GetProperties())
+       {
+           var name = x.Name;
+           if (x.PropertyType.Name.ToLower() == "string")
+           {
+               var Value = x.GetValue(ObjNew);
+               x.SetValue(ObjNew, JavaScriptAndHtmlStringEncode(Convert.ToString(Value)));
+           }
+       }
+       return ObjNew;
+   }
+
+   #endregion Encodeing
+
+
+   //***********************************************************************************************************************************
+
+   #region GetCorrectStringWithoutSpaceWithObj
+
+   public List<T> GetCorrectStringWithoutSpaceWithLst<T>(List<T> ObjNew)
+   {
+       List<T> Result = new List<T>();
+       foreach (var x in ObjNew)
+       {
+           var Find = GetCorrectStringWithoutSpaceWithObj(x);
+           Result.Add(Find);
+       }
+       return Result;
+   }
+
+   public T GetCorrectStringWithoutSpaceWithObj<T>(T ObjNew)
+   {
+       foreach (var x in ObjNew.GetType().GetProperties())
+       {
+           var name = x.Name;
+           if (x.PropertyType.Name.ToLower() == "string")
+           {
+               var Value = x.GetValue(ObjNew);
+               x.SetValue(ObjNew, CorrectStringWithoutSpace(Convert.ToString(Value)));
+           }
+       }
+       return ObjNew;
+   }
+
+
+
+   #endregion GetCorrectStringWithoutSpaceWithObj
+

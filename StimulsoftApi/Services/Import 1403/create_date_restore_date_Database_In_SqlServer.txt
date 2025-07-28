@@ -1,0 +1,10 @@
+select name,create_date
+from sys.databases
+where name='AAA'
+
+
+
+
+select destination_database_name, restore_date
+from msdb.dbo.restorehistory
+where destination_database_name='BBB'

@@ -1,0 +1,47 @@
+ 
+ALTER PROCEDURE [dbo].[spConvertExcel]
+
+AS
+------regsvr32 C:\Windows\SysWOW64\msexcl40.dll
+begin
+
+IF EXISTS(SELECT * FROM sys.servers WHERE name = N'ExcelSource')
+	EXEC master.sys.sp_dropserver 'ExcelSource','droplogins'  
+
+--begin transaction;
+EXEC sp_addlinkedserver 'ExcelSource', '',
+   'Microsoft.ACE.OLEDB.12.0',
+   'D:\Test\Personel.xlsx',
+   NULL,
+   'Excel 12.0'
+EXEC sp_addlinkedsrvlogin 'ExcelSource', 'false'
+EXEC sp_MSset_oledb_prop N'Microsoft.ACE.OLEDB.12.0', N'AllowInProcess', 1   
+
+declare @SheetName nvarchar(250)
+exec spExcelSheetName @TableName = @SheetName OUTPUT
+
+declare @ColumnsName nvarchar(250)
+exec spExcelColumnsName @ColumnsName = @ColumnsName OUTPUT
+
+declare @Query nvarchar(max)
+set @Query = 
+N'SELECT '+@ColumnsName+'
+FROM OPENROWSET(''Microsoft.ACE.OLEDB.12.0'',
+  ''Excel 12.0; HDR=YES;IMEX=1;Database=D:\Test\Personel.xlsx'',
+   ['+@SheetName+']);'
+
+declare  @ExcelPersonels table (FirstName nvarchar(250),LastName nvarchar(250), PersonnelCode varchar(10), BranchCode int, BranchName nvarchar(250), 
+								BranchOrganCode	int	, RecordDate char(10), OfficialPost	nvarchar(250))
+insert into @ExcelPersonels
+	exec sp_executesql @Query;
+
+--------update BranchOrgan--------
+ 
+--------update Branches--------
+ 
+--------update Users--------
+ 
+
+ 
+--rollback;
+end

@@ -1,0 +1,41 @@
+        public string CreateSepreatoreInString(string Input = "") 
+        {
+
+            string Part1 = "";
+            string Part2 = "";
+
+            Part1 = Input.Split('.')[0];
+            var IndexOfInput = Input.IndexOf(".");
+            Part2 = IndexOfInput == -1 ? "" : Input.Split('.')[1];
+
+            Input = Part1;
+
+            string Result = "";
+            int Counter = 0;
+            int LengthInput = Input.Length;
+            for (int i = LengthInput - 1; i >= 0; i--)
+            {
+                char CharString = Input[i];
+                Result = CharString + Result;
+                Counter = Counter + 1;
+                if (Counter == 3)
+                {
+                    Result = "," + Result;
+                    Counter = 0;
+                }
+
+            }
+
+            if (Result.Length > 0)
+            {
+                if (Result[0] == ',')
+                {
+                    Result = Result.Substring(1, Result.Length - 1);
+                }
+            }
+
+
+            Result = Result + (Part2.Trim().Length == 0 ? "" : ("." + Part2));
+
+            return Result;
+        }

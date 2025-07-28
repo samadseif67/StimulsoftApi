@@ -1,0 +1,13 @@
+ALTER proc [dbo].[spShrinkLogData]
+as
+begin
+ALTER DATABASE  TestDB SET RECOVERY SIMPLE
+
+ 
+
+DBCC SHRINKFILE (TestDB_log)
+
+ 
+ALTER DATABASE TestDB SET RECOVERY FULL
+
+ end

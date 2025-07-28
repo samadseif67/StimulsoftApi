@@ -1,0 +1,28 @@
+   public string ConvertStringNumberToPureNumber(string Number = "")
+   {
+       string Result = "";
+
+       for (int i = 0; i < Number.Length; i++)
+       {
+           if (IsNumberCharacter(Number[i]))
+           {
+               Result += Number[i];
+           }
+       }
+       return Result;
+   }
+   public bool IsNumberCharacter(char CharcterString)
+   {
+       //CharcterString
+       //فقط یک کارکتر رشته میگیرد و مشخص میکند عدد هست یا خیر
+       bool Result = false;
+
+       for (int i = 0; i < 10; i++)
+       {
+           if (Convert.ToString(CharcterString) == Convert.ToString(i))
+           {
+               Result = true;
+           }
+       }
+       return Result;
+   }

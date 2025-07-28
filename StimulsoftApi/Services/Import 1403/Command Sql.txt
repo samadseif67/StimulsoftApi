@@ -1,6 +1,6 @@
    public class mySQL
    {
-       private readonly  UniversityEntities db = new UniversityEntities();
+       private readonly IranolEntities db = new IranolEntities();
        private readonly SqlConnection connection;
        private SqlDataReader dataReader;
 
