@@ -1,0 +1,20 @@
+با استفاده ادمین ستریتور در محیط پاورشل یا داس دستور زیر وارد کنید
+
+
+dism /online /get-featureinfo /featurename:Microsoft-Hyper-V-All
+
+
+
+dism /online /get-featureinfo /featurename:VirtualMachinePlatform
+
+
+
+
+برای نصب
+
+فعال کردن Virtual Machine Platform:
+dism /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+
+فعال کردن Hyper-V:
+dism /online /enable-feature /featurename:Microsoft-Hyper-V-All /all /norestart

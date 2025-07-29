@@ -1,0 +1,110 @@
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Security.Cryptography;
+
+public class PasswordHasher
+{
+    public string HashPassword(string password)
+    {
+        // تولید salt تصادفی
+        byte[] salt = new byte[128 / 8];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(salt);
+        }
+
+        // هش کردن رمز عبور
+        string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+            password: password,
+            salt: salt,
+            prf: KeyDerivationPrf.HMACSHA256,
+            iterationCount: 10000,
+            numBytesRequested: 256 / 8));
+
+        // ذخیره salt و هش به همراه هم
+        return $"{Convert.ToBase64String(salt)}.{hashed}";
+    }
+
+    public bool VerifyPassword(string password, string hashedPassword)
+    {
+        var parts = hashedPassword.Split('.');
+        var salt = Convert.FromBase64String(parts[0]);
+        var hashed = parts[1];
+
+        string newHash = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+            password: password,
+            salt: salt,
+            prf: KeyDerivationPrf.HMACSHA256,
+            iterationCount: 10000,
+            numBytesRequested: 256 / 8));
+
+        return newHash == hashed;
+    }
+}
+
+
+//***********************************************************************************************************
+Install-Package BCrypt.Net-Next
+
+using BCrypt.Net;
+
+public class BcryptEncryptionService
+{
+    public string HashPassword(string password)
+    {
+        return BCrypt.Net.BCrypt.HashPassword(password);
+    }
+
+    public bool VerifyPassword(string password, string hash)
+    {
+        return BCrypt.Net.BCrypt.Verify(password, hash);
+    }
+}
+
+
+
+//***************************************************************************************************
+
+public class CustomEncryptionService
+{
+    private readonly string _key;
+
+    public CustomEncryptionService(IConfiguration configuration)
+    {
+        _key = configuration["EncryptionKey"] ?? throw new ArgumentNullException("EncryptionKey");
+    }
+
+    public string Encrypt(string plainText)
+    {
+        byte[] keyBytes = Encoding.UTF8.GetBytes(_key);
+        byte[] plainBytes = Encoding.UTF8.GetBytes(plainText);
+        byte[] encryptedBytes = new byte[plainBytes.Length];
+
+        for (int i = 0; i < plainBytes.Length; i++)
+        {
+            encryptedBytes[i] = (byte)(plainBytes[i] ^ keyBytes[i % keyBytes.Length]);
+        }
+
+        return Convert.ToBase64String(encryptedBytes);
+    }
+
+    public string Decrypt(string cipherText)
+    {
+        byte[] keyBytes = Encoding.UTF8.GetBytes(_key);
+        byte[] encryptedBytes = Convert.FromBase64String(cipherText);
+        byte[] decryptedBytes = new byte[encryptedBytes.Length];
+
+        for (int i = 0; i < encryptedBytes.Length; i++)
+        {
+            decryptedBytes[i] = (byte)(encryptedBytes[i] ^ keyBytes[i % keyBytes.Length]);
+        }
+
+        return Encoding.UTF8.GetString(decryptedBytes);
+    }
+}
+
+
+//******************************************************************************************************
+
+
+
+

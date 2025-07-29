@@ -1,0 +1,11 @@
+SELECT create_date 
+                FROM sys.databases 
+                WHERE name = DB_NAME()
+
+
+
+
+SELECT TOP 1 restore_date 
+                FROM msdb.dbo.restorehistory 
+                WHERE destination_database_name = DB_NAME()
+                ORDER BY restore_date DESC

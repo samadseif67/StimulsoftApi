@@ -1,0 +1,38 @@
+using System;
+using System.IO;
+
+class FileSplitter
+{
+    public static void SplitFile(string inputFile, string outputDir, int maxSizeInMB)
+    {
+        const int bufferSize = 1024 * 1024; // 1 MB
+        byte[] buffer = new byte[bufferSize];
+        int partNumber = 1;
+        long maxBytesPerFile = maxSizeInMB * 1024L * 1024L;
+
+        using FileStream sourceStream = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+        Directory.CreateDirectory(outputDir);
+
+        while (sourceStream.Position < sourceStream.Length)
+        {
+            string partFileName = Path.Combine(outputDir, $"{Path.GetFileNameWithoutExtension(inputFile)}.part{partNumber}{Path.GetExtension(inputFile)}");
+            using FileStream partStream = new FileStream(partFileName, FileMode.Create, FileAccess.Write);
+
+            long bytesWritten = 0;
+            while (bytesWritten < maxBytesPerFile && sourceStream.Position < sourceStream.Length)
+            {
+                int bytesToRead = (int)Math.Min(bufferSize, maxBytesPerFile - bytesWritten);
+                int bytesRead = sourceStream.Read(buffer, 0, bytesToRead);
+                partStream.Write(buffer, 0, bytesRead);
+                bytesWritten += bytesRead;
+            }
+
+            Console.WriteLine($"Created: {partFileName}");
+            partNumber++;
+        }
+    }
+}
+
+
+
+FileSplitter.SplitFile("largefile.zip", "output", 10); // Split into 10 MB parts
