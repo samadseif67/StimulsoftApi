@@ -1,0 +1,17 @@
+xcopy "E:\SourceFolder" "F:\BackupFolder" /E /I /Y
+
+دستور بالا را بصورت یک فایل 
+bat
+ذخیره کرد
+
+وسپس از طریق 
+Task Scheduler 
+خود ویندوز میتوان یک زمان بندی ایجاد کرد و نهایت فایل
+bat
+را به آن معرفی کرد
+
+
+
+
+
+robocopy "E:\SourceFolder" "F:\BackupFolder" /MIR       در صورتی که یک فایل از مبدا حذف شود از مقصد هم حذف میشود

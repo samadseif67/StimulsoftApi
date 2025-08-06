@@ -1,0 +1,9 @@
+On Windows, you can use cmd:
+
+echo "" >.gitignore
+
+Or use Git Bash cmd:
+
+touch .gitignore,
+
+This useful for a Linux and Mac system.

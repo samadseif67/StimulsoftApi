@@ -1,0 +1,176 @@
+مدل حساب بانکی
+
+public class Account
+{
+    public int Id { get; set; }
+    public decimal Balance { get; set; }
+
+    [Timestamp]
+    public byte[] RowVersion { get; set; } // برای concurrency check
+}
+
+
+//*********************************************************************************************************
+
+سرویس برداشت
+
+
+public async Task<bool> WithdrawAsync(int accountId, decimal amount)
+{
+    await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+
+    var account = await _dbContext.Accounts
+        .Where(a => a.Id == accountId)
+        .SingleOrDefaultAsync();
+
+    if (account == null || account.Balance < amount)
+        return false;
+
+    account.Balance -= amount;
+
+    try
+    {
+        await _dbContext.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return true;
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        // در صورتی که رکورد همزمان توسط درخواست دیگری تغییر کرده باشد
+        await transaction.RollbackAsync();
+        return false;
+    }
+}
+
+
+//*********************************************************************************************************
+
+از طریق  Stored Procedure 
+
+
+UPDATE Accounts
+SET Balance = Balance - @Amount
+WHERE Id = @AccountId AND Balance >= @Amount
+
+//*********************************************************************************************************
+
+
+var affected = await _dbContext.Database.ExecuteSqlRawAsync(
+    "UPDATE Accounts SET Balance = Balance - {0} WHERE Id = {1} AND Balance >= {0}",
+    amount, accountId);
+
+return affected > 0;
+
+
+
+//*****************************************************************************************************
+//*********************************************************************************************************************************************************************
+روش اتمی با سرعت بالا
+
+public async Task<(bool Success, string Message)> TransferRawAsync(TransferDto dto)
+{
+    if (dto.Amount <= 0) return (false, "مبلغ نامعتبر است");
+
+    await using var tx = await _db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
+
+    var rows = await _db.Database.ExecuteSqlRawAsync(@"
+        UPDATE Cards SET Balance = Balance - {0}
+        WHERE CardNumber = {1} AND Balance >= {0};
+
+        UPDATE Cards SET Balance = Balance + {0}
+        WHERE CardNumber = {2};",
+        dto.Amount, dto.SourceCard, dto.DestinationCard);
+
+    await tx.CommitAsync();
+
+    // اگر UPDATE اول 0 ردیف برگرداند یعنی موجودی کافی نبود
+    var srcUpdated = await _db.Cards
+        .Where(c => c.CardNumber == dto.SourceCard)
+        .AnyAsync(c => c.Balance >= 0);
+
+    return srcUpdated
+        ? (true, "انتقال موفق")
+        : (false, "موجودی کافی نیست");
+}
+
+
+//*****************************************************************************************************************************************
+  اسکریپت SQL Server
+
+
+CREATE OR ALTER PROCEDURE sp_Transfer
+    @Src NVARCHAR(16),
+    @Dst NVARCHAR(16),
+    @Amount DECIMAL(18,2),
+    @Result BIT OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        BEGIN TRAN;
+
+        -- کسر از مبدا
+        UPDATE Cards SET Balance = Balance - @Amount
+        WHERE CardNumber = @Src AND Balance >= @Amount;
+
+        IF @@ROWCOUNT = 0
+        BEGIN
+            ROLLBACK;
+            SET @Result = 0;
+            RETURN;
+        END
+
+        -- افزایش به مقصد
+        UPDATE Cards SET Balance = Balance + @Amount
+        WHERE CardNumber = @Dst;
+
+        COMMIT;
+        SET @Result = 1;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK;
+        SET @Result = 0;
+    END CATCH
+END
+
+
+//***********************************************************************************************************************
+
+
+In-Memory OLTP (SQL Server)
+
+CREATE DATABASE CardDB
+WITH MEMORY_OPTIMIZED_ELEVATE_TO_SNAPSHOT = ON;
+GO
+
+ALTER DATABASE CardDB ADD FILEGROUP CardIm CONTAINS MEMORY_OPTIMIZED_DATA;
+ALTER DATABASE CardDB ADD FILE (NAME='CardIm', FILENAME='C:\SQLData\CardIm') TO FILEGROUP CardIm;
+
+CREATE TABLE dbo.Cards
+(
+    CardNumber NVARCHAR(16) COLLATE Latin1_General_100_BIN2 NOT NULL PRIMARY KEY NONCLUSTERED,
+    Balance    DECIMAL(18,2) NOT NULL
+) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = SCHEMA_AND_DATA);
+
+
+
+CREATE OR ALTER PROCEDURE dbo.TransferInMem
+    @Src NVARCHAR(16), @Dst NVARCHAR(16), @Amount DECIMAL(18,2)
+WITH NATIVE_COMPILATION, SCHEMABINDING
+AS
+BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'us_english')
+    DECLARE @bal DECIMAL(18,2);
+
+    SELECT @bal = Balance FROM dbo.Cards WHERE CardNumber = @Src;
+    IF @bal IS NULL OR @bal < @Amount
+        THROW 51000, 'موجودی کافی نیست', 1;
+
+    UPDATE dbo.Cards SET Balance = Balance - @Amount WHERE CardNumber = @Src;
+    UPDATE dbo.Cards SET Balance = Balance + @Amount WHERE CardNumber = @Dst;
+END
+
+
+///***************************************************************************************************
+
+
+

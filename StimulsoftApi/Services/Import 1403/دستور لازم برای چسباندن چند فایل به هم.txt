@@ -1,0 +1,15 @@
+   using (var writer = new StreamWriter(pathfile))
+        {
+            writer.WriteLine("@echo off");
+            writer.WriteLine("echo در حال ترکیب فایل‌های بکاپ...");
+            writer.WriteLine("copy /b part001.bak + part002.bak + part003.bak + part004.bak + part005.bak + part006.bak full_backup.bak");
+            writer.WriteLine("echo ترکیب کامل شد! فایل full_backup.bak ایجاد شد.");
+            writer.WriteLine("pause");
+        }
+
+
+
+
+
+این نوشته بالا باید در یک فایل با پسوند زیر ایجاد شود
+bat

@@ -1,0 +1,27 @@
+CREATE TABLE dbo.Users
+(
+    Id INT NOT NULL PRIMARY KEY NONCLUSTERED,
+    Name NVARCHAR(100)
+)
+WITH (MEMORY_OPTIMIZED = ON, DURABILITY = SCHEMA_AND_DATA);  //داده بعد ریستارت کردن سیستم از بین نمیره
+
+
+//***********************************************************************************************
+
+CREATE TABLE dbo.TempLogs
+(
+    Id INT NOT NULL PRIMARY KEY NONCLUSTERED,
+    Message NVARCHAR(500)
+)
+WITH (MEMORY_OPTIMIZED = ON, DURABILITY = SCHEMA_ONLY); //داده بعد ریستارت کردن سیستم از بین میره
+
+
+//***********************************************************************************************
+
+modelBuilder.Entity<YourEntity>()
+    .ToTable(tb =>
+    {
+        tb.IsMemoryOptimized(true);
+        // اگر بخواهی داده‌ها موقتی باشند:
+        // tb.HasDurability(StoreObjectType.Table, durability: StoreObjectDurability.SchemaOnly);
+    });
