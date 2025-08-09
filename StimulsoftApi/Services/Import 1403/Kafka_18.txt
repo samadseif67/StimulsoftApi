@@ -1,0 +1,223 @@
+
+﻿services: 
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.2.15  # تضمین می‌کند داده‌ها همیشه در دسترس باشند  - مثل یک دیتابیس مرکزی برای اطلاعات کافکا
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+    networks:
+      - kafka
+
+  kafka:
+    image: confluentinc/cp-kafka:7.2.15 #دریافت، ذخیره و تحویل پیام‌ها بین تولیدکنندگان   مثل یک پستچی هوشمند عمل می‌کند
+    container_name: kafka
+    ports:
+      - 9092:9092
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_BROKER_ID=1
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+    networks:
+      - kafka
+
+
+
+networks:
+  kafka:
+
+
+
+
+
+#docker-compose up
+
+//********************************************************************************************************
+برای مشاهده پیام های کافکا در مرورگر
+
+version: '3'
+services:
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"  # پورت دسترسی در مرورگر
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local-kafka
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092  # آدرس کافکا در داکر
+    depends_on:
+      - kafka  # اگر کافکا هم در داکر اجرا شده است
+
+
+//*****************************************************************************************************
+
+
+Install-Package Confluent.Kafka
+
+
+namespace InventoryProducer.Models
+{
+    public class InventoryUpdateRequest
+    {
+        public int Id { get; set; }
+
+        public string ProductId { get; set; }
+
+        public int Quantity { get; set; }
+    }
+}
+
+//******************************************************************************************************
+در قسمت appsetting
+
+"Kafka": { 
+    "BootstrapServers": "localhost:9092"  
+  } 
+
+
+
+
+
+//*******************************************************************************************************
+در قسمت سرور
+
+
+using Confluent.Kafka;
+
+namespace InventoryProducer.Services
+{
+    public class ProducerService
+    {
+        private readonly IConfiguration _configuration;
+
+        private readonly IProducer<Null, string> _producer;
+
+        public ProducerService(IConfiguration configuration)
+        {
+            _configuration = configuration;
+
+            var producerconfig = new ProducerConfig
+            {
+                BootstrapServers = _configuration["Kafka:BootstrapServers"],//مثل آدرس پستچی است که می‌گوید پیام را کجا ببرد
+                EnableIdempotence = true, // حتی اگر پیام چند بار ارسال شود، فقط یک بار پردازش می‌شود.
+                MessageSendMaxRetries = int.MaxValue,اگر خطایی رخ داد، بی‌نهایت بار دوباره تلاش می‌کند  مثل این است که آنقدر زنگ بزنی تا جواب بدهند
+                Acks = Acks.All, // - مثل این است که به همه دوستانت پیام بدهی و منتظر تأیید همه بمانی  - امن‌ترین گزینه
+                RequestTimeoutMs = 30000  //اگر کافکا در ۳۰ ثانیه جواب نداد، خطا می‌دهد
+            };
+
+            _producer = new ProducerBuilder<Null, string>(producerconfig).Build();
+        }
+
+        public async Task ProduceAsync(string topic, string message)
+        {
+            var kafkamessage = new Message<Null, string> { Value = message, };
+
+            await _producer.ProduceAsync(topic, kafkamessage);
+        }
+    }
+}
+
+
+builder.Services.AddSingleton<ProducerService>();
+
+
+namespace InventoryProducer.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class InventoryController : ControllerBase
+    {
+        private readonly ProducerService _producerService;
+
+        public InventoryController(ProducerService producerService)
+        {
+            _producerService = producerService;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateInventory([FromBody] InventoryUpdateRequest request)
+        {
+            var message = JsonSerializer.Serialize(request);
+
+            await _producerService.ProduceAsync("InventoryUpdates", message);
+
+            return Ok("Inventory Updated Successfully...");
+        }
+    }
+}
+
+
+//*************************************************************************************************************
+در قسمت کلاینت
+
+namespace InventoryConsumer.Services
+{
+    public class ConsumerService : BackgroundService
+    {
+        private readonly IConsumer<Ignore, string> _consumer;
+
+        private readonly ILogger<ConsumerService> _logger;
+
+        public ConsumerService(IConfiguration configuration, ILogger<ConsumerService> logger)
+        {
+            _logger = logger;
+
+            var consumerConfig = new ConsumerConfig
+            {
+                BootstrapServers = configuration["Kafka:BootstrapServers"],
+                GroupId = "InventoryConsumerGroup",//شناسه گروه مصرف‌کننده
+                AutoOffsetReset = AutoOffsetReset.Earliest,
+                EnableAutoCommit = false // کامیت دستی
+            };
+
+            _consumer = new ConsumerBuilder<Ignore, string>(consumerConfig).Build();
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            _consumer.Subscribe("InventoryUpdates");
+
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                ProcessKafkaMessage(stoppingToken);
+
+                Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            }
+
+            _consumer.Close();
+        }
+
+        public void ProcessKafkaMessage(CancellationToken stoppingToken)
+        {
+            try
+            {
+                var consumeResult = _consumer.Consume(stoppingToken);
+
+                var message = consumeResult.Message.Value;
+
+                _consumer.Commit(consumeResult);// برای اینکه وقتی کلاینت قطع و وصل میشه دو باره بتواند ادامه پیام ها را بخواند 
+
+                _logger.LogInformation($"Received inventory update: {message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error processing Kafka message: {ex.Message}");
+            }
+        }
+    }
+}
+
+
+//************************************************************************************************************************************
+
+
+
+
+
+
+
+
+
