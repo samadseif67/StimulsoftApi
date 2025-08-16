@@ -1,0 +1,188 @@
+
+using Microsoft.IO;
+using Stimulsoft.Report;
+using Stimulsoft.Report.Export;
+
+namespace AppApi.Services;
+public interface IStiReportService
+{
+    byte[] RenderPdf(string templatePath, IDictionary<string, object> businessObjects,
+                     StiPdfExportSettings? settings = null);
+
+    Stream RenderPdfStream(string templatePath, IDictionary<string, object> businessObjects,
+                           StiPdfExportSettings? settings = null);
+
+    byte[] RenderPdf(string templatePath, Action<StiReport> bind,
+                     StiPdfExportSettings? settings = null);
+}
+
+public sealed class StiReportService : IStiReportService
+{
+    private readonly IReportTemplatePool _pool;
+    private readonly RecyclableMemoryStreamManager _rms;
+
+    public StiReportService(IReportTemplatePool pool, RecyclableMemoryStreamManager rms)
+    {
+        _pool = pool;
+        _rms = rms;
+    }
+
+    public byte[] RenderPdf(string templatePath, IDictionary<string, object> businessObjects,
+                            StiPdfExportSettings? settings = null)
+    {
+        var report = _pool.Get(templatePath);
+
+        foreach (var kv in businessObjects)
+            report.RegBusinessObject(kv.Key, kv.Value);
+
+        report.Render(false);
+
+        using var ms = _rms.GetStream("sti-pdf");
+        report.ExportDocument(StiExportFormat.Pdf, ms, settings ?? FastSettings());
+        return ms.ToArray();
+    }
+
+    public Stream RenderPdfStream(string templatePath, IDictionary<string, object> businessObjects,
+                                  StiPdfExportSettings? settings = null)
+    {
+        var report = _pool.Get(templatePath);
+        foreach (var kv in businessObjects)
+            report.RegBusinessObject(kv.Key, kv.Value);
+
+        report.Render(false);
+
+        var ms = _rms.GetStream("sti-pdf");
+        report.ExportDocument(StiExportFormat.Pdf, ms, settings ?? FastSettings());
+        ms.Position = 0;
+        return ms;
+    }
+
+    public byte[] RenderPdf(string templatePath, Action<StiReport> bind,
+                            StiPdfExportSettings? settings = null)
+    {
+        var report = _pool.Get(templatePath);
+        bind(report);
+        report.Render(false);
+
+        using var ms = _rms.GetStream("sti-pdf");
+        report.ExportDocument(StiExportFormat.Pdf, ms, settings ?? FastSettings());
+        return ms.ToArray();
+    }
+
+    private static StiPdfExportSettings FastSettings() => new()
+    {
+        Compressed = false,
+        ImageQuality = 0.9f
+    };
+}
+
+
+//****************************************************************************************************************************************************
+
+
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.FileProviders;
+using Stimulsoft.Report;
+
+namespace AppApi.Services;
+public interface IReportTemplatePool
+{
+    StiReport Get(string relativePath);
+}
+
+public sealed class ReportTemplatePool : IReportTemplatePool
+{
+    private readonly IMemoryCache _cache;
+    private readonly IFileProvider _fp;
+
+    public ReportTemplatePool(IWebHostEnvironment env, IMemoryCache cache)
+    {
+        _cache = cache;
+        _fp = env.ContentRootFileProvider;
+    }
+
+    public StiReport Get(string relativePath)
+    {
+        var baseReport = _cache.GetOrCreate(relativePath, entry =>
+        {
+            entry.AddExpirationToken(_fp.Watch(relativePath));
+            entry.Priority = CacheItemPriority.High;
+
+            var fi = _fp.GetFileInfo(relativePath);
+            if (!fi.Exists) throw new FileNotFoundException("خطا");
+
+            var r = new StiReport();
+            using var s = fi.CreateReadStream();
+            r.Load(s);
+            return r;
+        })!;
+
+        return (StiReport)baseReport.Clone();
+    }
+}
+
+
+ 
+
+
+//*****************************************************************************************************************************************************
+
+
+
+ "Stimulsoft": {
+     "LicenseKey": "6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHkO46nMQvol4ASeg91in+mGJLnn2KMIpg3eSXQSgaFOm15+0lhekKip+wRGMwXsKpHAkTvorOFqnpF9rchcYoxHXtjNDLiDHZGTIWq6D/2q4k/eiJm9fV6FdaJIUbWGS3whFWRLPHWCBsWnalqTdZlP9knjaWclfjmUKf2Ksc5btMD6pmR7ZHQfHXfdgYK7tLR1rqtxYxBzOPq3LIBvd3spkQhKb07LTZQoyQ3vmRSMALmJSS6ovIS59XPS+oSm8wgvuRFqE1im111GROa7Ww3tNJTA45lkbXX+SocdwXvEZyaaq61Uc1dBg+4uFRxvyRWvX5WDmJz1X0VLIbHpcIjdEDJUvVAN7Z+FW5xKsV5ySPs8aegsY9ndn4DmoZ1kWvzUaz+E1mxMbOd3tyaNnmVhPZeIBILmKJGN0BwnnI5fu6JHMM/9QR2tMO1Z4pIwae4P92gKBrt0MqhvnU1Q6kIaPPuG2XBIvAWykVeH2a9EP6064e11PFCBX4gEpJ3XFD0peE5+ddZh+h495qUc1H2B"
+ }
+
+var stiKey = builder.Configuration["Stimulsoft:LicenseKey"];
+if (!string.IsNullOrEmpty(stiKey))
+{
+    StiLicense.Key = stiKey;
+}
+
+
+//**************************************************************************************************************************************************
+
+
+StiLicense.Key = "6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHkO46nMQvol4ASeg91in+mGJLnn2KMIpg3eSXQSgaFOm15+0lhekKip+wRGMwXsKpHAkTvorOFqnpF9rchcYoxHXtjNDLiDHZGTIWq6D/2q4k/eiJm9fV6FdaJIUbWGS3whFWRLPHWCBsWnalqTdZlP9knjaWclfjmUKf2Ksc5btMD6pmR7ZHQfHXfdgYK7tLR1rqtxYxBzOPq3LIBvd3spkQhKb07LTZQoyQ3vmRSMALmJSS6ovIS59XPS+oSm8wgvuRFqE1im111GROa7Ww3tNJTA45lkbXX+SocdwXvEZyaaq61Uc1dBg+4uFRxvyRWvX5WDmJz1X0VLIbHpcIjdEDJUvVAN7Z+FW5xKsV5ySPs8aegsY9ndn4DmoZ1kWvzUaz+E1mxMbOd3tyaNnmVhPZeIBILmKJGN0BwnnI5fu6JHMM/9QR2tMO1Z4pIwae4P92gKBrt0MqhvnU1Q6kIaPPuG2XBIvAWykVeH2a9EP6064e11PFCBX4gEpJ3XFD0peE5+ddZh+h495qUc1H2B";
+
+
+
+  <ItemGroup>
+    <PackageReference Include="Stimulsoft.Reports.Engine.NetCore" Version="2024.3.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+
+
+//******************************************************************************************************************************************************
+
+
+ 
+builder.Services.AddSingleton<IReportTemplatePool, ReportTemplatePool>();
+builder.Services.AddSingleton(new RecyclableMemoryStreamManager());
+builder.Services.AddScoped<IStiReportService, StiReportService>();
+
+
+//****************************************************************************************************************************************************
+
+
+ [HttpGet]
+ public IActionResult Print([FromServices] IStiReportService reportService, Guid id)
+ {
+     var model = bll.GetAccountDocumentHeader(id);
+
+     var stream = reportService.RenderPdfStream("StimulsoftFile/AccountDocumentHeader.mrt", new Dictionary<string, object>
+     {
+         ["AccountDocumentHeader"] = model,
+         ["AccountDocumentDetail"] = model.AccountDocumentDetailList
+     });
+
+     return File(stream, "application/pdf", "AccountDocumentHeader.pdf");
+ }
+ 
+
+//*****************************************************************************************************************************************************
+
+
+
+
+

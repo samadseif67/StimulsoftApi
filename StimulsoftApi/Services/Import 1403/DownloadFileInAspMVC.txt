@@ -1,0 +1,8 @@
+ string path = Server.MapPath($"~/BackupFiles/{Filename}");                     
+ string contentType = MimeMapping.GetMimeMapping(path);
+ bool ExistFile = System.IO.File.Exists(path);
+ if (ExistFile == true)
+ {
+     byte[] fileBytes = System.IO.File.ReadAllBytes(path);                      
+     return File(fileBytes, contentType, Filename);
+ }

@@ -1,0 +1,3 @@
+cmd اجرا کنید
+
+sc create PrintAgent binPath= "C:\path\to\publish\PrintAgent.exe" start= auto   //وقتی که فایل مورد نظر را اجرا میکنیم  بعد از ریستارت کردن دو باره خودش اجرا میشود

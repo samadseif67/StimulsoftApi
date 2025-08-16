@@ -1,0 +1,91 @@
+ public void ExcuteCombin()
+ {
+     string Combin_Path = System.Web.HttpContext.Current.Server.MapPath("~/BackupFiles/Combin.bat");             
+     using (var writer = new StreamWriter(Combin_Path))
+     {
+         writer.WriteLine("@echo off");
+         writer.WriteLine("echo در حال ترکیب فایل‌های بکاپ...");
+         writer.WriteLine("copy /b ContractsControl_ABC.part1.bak + ContractsControl_ABC.part2.bak  full_backup.bak");
+         writer.WriteLine("echo ترکیب کامل شد! فایل full_backup.bak ایجاد شد.");
+         writer.WriteLine("pause");
+     }
+      
+ }
+
+
+
+
+
+
+//***********************************************************
+برای اینکه بتوانیم چند تا فایل را داخل یک فایل زیپ قرار بدهیم
+
+ private string[] GetPartFilePaths()
+ {
+      
+     return new[]
+     {
+     System.Web.HttpContext.Current.Server.MapPath("~/BackupFiles/ContractsControl_ABC.part1.bak"),
+     System.Web.HttpContext.Current.Server.MapPath("~/BackupFiles/ContractsControl_ABC.part2.bak")            
+ };
+ }
+
+ public void DownloadPartAsFullZip(int partNumber)
+ {
+     //if (partNumber < 1 || partNumber > 3)
+         //return HttpNotFound("Invalid part.");
+
+     var allPartPaths = GetPartFilePaths();
+
+     foreach (var path in allPartPaths)
+     {
+         //if (!System.IO.File.Exists(path))
+         //    return HttpNotFound($"File not found: {path}");
+     }
+
+     // نام فایل ZIP بر اساس شماره قسمت (مثلاً backup_part1.bak.zip)
+     string fileName = $"backup_part{partNumber}.bak.zip";
+     using (var memoryStream = new MemoryStream())
+     {
+         using (var zipStream = new ZipOutputStream(memoryStream))
+         {
+             zipStream.SetLevel(6);
+
+             foreach (var partPath in allPartPaths)
+             {
+                 string entryName = Path.GetFileName(partPath);
+                 var entry = new ZipEntry(entryName)
+                 {
+                     Size = new FileInfo(partPath).Length,
+                     DateTime = DateTime.Now
+                 };
+
+                 zipStream.PutNextEntry(entry);
+
+                 using (var fileStream = System.IO.File.OpenRead(partPath))
+                 {
+                     fileStream.CopyTo(zipStream);
+                 }
+
+                 zipStream.CloseEntry();
+             }
+
+             zipStream.Finish();
+
+             memoryStream.Position = 0;
+             var pathfileName = System.Web.HttpContext.Current.Server.MapPath($"~/BackupFiles/{fileName}");
+             using (FileStream file = new FileStream(pathfileName, FileMode.Create, FileAccess.Write))
+             {
+                 memoryStream.WriteTo(file);
+             }
+         }
+
+        
+     }
+
+   
+
+
+    // return File(memoryStream, "application/zip", fileName);
+    
+ }

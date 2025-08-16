@@ -1,0 +1,6 @@
+ string contentType = MimeMapping.GetMimeMapping(path);
+
+string path  = System.Web.HttpContext.Current.Server.MapPath("~/BackupFiles/" + filenameBak);
+byte[] fileBytes = System.IO.File.ReadAllBytes(path);
+System.IO.File.Delete(path);
+return File(fileBytes, contentType, Filename);

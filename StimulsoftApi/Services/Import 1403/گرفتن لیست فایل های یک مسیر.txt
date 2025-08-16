@@ -1,0 +1,22 @@
+ string pathOut = System.Web.HttpContext.Current.Server.MapPath("~/BackupFiles");
+ List<string> LstFileName = Directory.GetFiles(pathOut).Where(x => x.Contains(FileNameFull + ".part")).ToList();
+
+
+
+//********************************************************
+
+
+  public List<string> GetLstUrlFileBackUp(string Filename, string NumberRandom,int DetectExtensionFile)
+  {
+      List<string> lstFilename = new List<string>();
+      string FileNameFull = Filename + "_" + NumberRandom;
+      string pathOut = System.Web.HttpContext.Current.Server.MapPath("~/BackupFiles");
+      List<string> LstFileName = Directory.GetFiles(pathOut).Where(x => x.Contains(FileNameFull + ".part")).ToList();
+      foreach (var item in LstFileName)
+      {
+          int LenSplite = item.Split('\\').Length;
+          string filenameBak = item.Split('\\')[LenSplite - 1];
+          lstFilename.Add(filenameBak);
+      }
+      return lstFilename;
+  } 
