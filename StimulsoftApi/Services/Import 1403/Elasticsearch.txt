@@ -1,0 +1,254 @@
+ابتدا نرم افزار های مورد نیاز زیر را نصب کنید 
+Elasticsearch
+kibana
+
+سپس در قسمت پوشه های مورد نظر هر کدام از نرم افزار های بالا در قسمت پوشه زیر فایل های مربوط به آن را در قسمت داس  اجرا کنید
+
+
+C:\Users\ali\Desktop\Elastic search\elasticsearch-9.1.1\bin\elasticsearch
+C:\Users\s.seyf\Desktop\Elastic search\kibana-9.1.1\bin\kibana
+
+
+//************************************************************************************
+
+http://localhost:9200    Elasticsearch
+http://localhost:5601    kibana
+
+
+ با استفاده از نرم افزار کیبانا از منوی زیر اقدام کنید
+
+
+kibana/managment/Devtools
+
+//***********************************************************************************
+
+PUT /persons    //برای ساختن یک جدول
+
+
+//**********************************************************************************
+
+ post /persons/_doc    //برای ساخت و درج اطلاعات در جدول
+ {
+        "name":"naser",
+        "family":"mohamadi"  
+ }
+
+//*********************************************************************************
+
+POST /persons/_update/1dbCspgBjCY0xC-E5OQe  //برای آپدیت کردن
+{
+    "doc": {
+         "family":"niki18",
+         "age":"18"
+    }
+}
+
+
+//*********************************************************************************
+
+
+ post /persons/_search   //برای خواندن تمام اطلاعات جدول
+
+
+//*********************************************************************************
+
+  get /persons/_search   //برای خواندن تمام اطلاعات جدول
+
+
+//********************************************************************************
+
+
+  get /persons/_doc/1NbCspgBjCY0xC-ElOTN   //برای خواندن اطلاعات براساس شناسه منحصر به فرد
+
+
+//*******************************************************************************
+
+
+  get /persons/_search     //برای جستجو در براساس فیلد خاص
+  {
+    "query": {
+        "match":{
+            "name":"naser"
+        }
+    }
+  }
+
+//*******************************************************************************
+
+
+
+get /persons/_search     //برای جستجو چند تا فیلد براساس And 
+{
+    "query": {
+        "bool": {
+            "must": [  //and
+              {
+                "match": {
+                  "name": "naser"
+                }
+              },
+              {
+                "match": {
+                  "age": "18"
+                }
+              }
+            ]
+        }
+    }
+}
+
+//**********************************************************************************
+
+get /persons/_search    //برای جستجوی چند تا فیلد براساس OR
+{
+    "query": {
+        "bool": {
+            "should": [  //or
+              {
+                "match": {
+                  "name": "naser"
+                }
+              },
+              {
+                "match": {
+                  "age": "18"
+                }
+              }
+            ]
+        }
+    }
+}
+
+
+//***********************************************************************************
+
+
+get /persons/_search    //برای جستجوی یک کلمه در بین ستون های مختلف    -- multi_match
+{
+    "query": {
+        "multi_match": {
+          "query": "naser",
+          "fields": ["name","family"]
+        }
+    }
+}
+
+
+//************************************************************************************
+
+get /persons/_search   //برای جستجو براساس درخواست  کوئری استرینگ
+{
+    "query": {
+        "query_string": {        
+          "query": "naser AND niki18",
+          "fields": ["name","family"]
+        }
+    }
+}
+
+//**********************************************************************************
+برای اینکه بتوانیم فایل بکاپ گیری در داخل درایو دیگر انجام شود با فایل زیر را گزینه محل ذخیره سازی را تنظیم کنیم
+
+elasticsearch.yml  //فایل
+
+path.repo: ["F:\\ES_Backup"]     //این تنظیمات را باید در انتهای فایل بالا درج کرد
+
+
+//******************************************************************************
+برای بکاپ گیری از ایندکس ها یا همان جدول های ایجاد شده
+
+//برای بکاپ گیری
+DELETE _snapshot/test_repo
+
+put _snapshot/test_repo
+{
+  "type": "fs",
+  "settings": {
+    "location": "F:\\ES_Backup"
+  }
+}
+
+ PUT _snapshot/test_repo/snapshot_products_only
+{
+  "indices": "products",        // ← فقط همین ایندکس
+  "ignore_unavailable": true,
+  "include_global_state": false
+}
+
+
+GET _snapshot/test_repo/snapshot_products_only
+
+//***********************************************************************************
+برای ریستارت کردن ایندکس یا همان جدول ها 
+ابتدا فایل های بکاپ گیری را در مسیر مورد قرار میدهیم
+
+
+PUT _snapshot/test_repo
+{
+  "type": "fs",
+  "settings": {
+    "location": "D:\\ES_Backup",
+    "compress": true
+  }
+}
+
+
+
+GET _snapshot/test_repo/_all
+
+
+//ایندکس را با همان نام قبلی بازیابی میکنیم
+POST _snapshot/test_repo/snapshot_2025_08_17_single/_restore
+{
+  "indices": "my_index",
+  "ignore_unavailable": true,
+  "include_global_state": false
+}
+
+
+//اگر بخوام با نام جدید ایندکس را ریستور کنم
+POST _snapshot/test_repo/snapshot_2025_08_17_single/_restore
+{
+  "indices": "my_index",
+  "ignore_unavailable": true,
+  "include_global_state": false,
+  "rename_pattern": "my_index",
+  "rename_replacement": "my_index_restored"
+}
+
+
+
+//****************************************************************************************
+Install-Package Elastic.Clients.Elasticsearch
+
+
+
+using Elastic.Clients.Elasticsearch;
+using Elastic.Transport;
+
+var client = new ElasticsearchClient("<CLOUD_ID>", new ApiKey("<API_KEY>"));
+
+
+var person = new Person { FirstName = "Steve", Age = 35 };
+var indexResponse = await Client.IndexAsync(person);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

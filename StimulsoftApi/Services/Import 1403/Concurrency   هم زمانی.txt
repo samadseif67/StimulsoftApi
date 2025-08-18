@@ -1,0 +1,84 @@
+ public class Product
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+
+        [Timestamp] // وقتی که بخواهیم هم زمانی برای ردیف مورد نظر برای تمام ستون ها اعمال شود
+        public byte[] RowVersion { get; set; }
+    }
+
+
+//***************************************************************
+
+[ConcurrencyCheck]  //وقتی که بخواهیم فقط روی یک ستون هم زمانی را اعمال کنیم
+public float Salary{ get; set; }
+
+//*************************************************************** 
+
+modelBuilder.Entity<Employee>()
+ .Property(p => p.Salary) 
+ .IsConcurrencyToken();
+//****************************************************************
+
+
+
+var car = context.Cars.FirstOrDefault(c => c.Id == id && !c.IsSold);
+
+if (car == null) return BadRequest("فروخته شد");
+
+car.IsSold = true;
+try
+{
+    context.SaveChanges();   // RowVersion چک می‌شود
+}
+catch (DbUpdateConcurrencyException)
+{
+    return BadRequest("متأسفانه خودرو همین حالا فروخته شد");
+}
+
+
+//******************************************************************
+using var tx = context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable);// انگار من تنها کاربر سیستم هستم؛ هیچ تراکنش دیگری نباید در طول عمر من بتواند داده‌ای را که من خوانده‌ام یا قرار است بنویسم تغییر دهد».
+
+
+var car = context.Cars.FirstOrDefault(c => c.Id == id && !c.IsSold);
+if (car == null) return BadRequest("فروخته شد");
+
+car.IsSold = true;
+context.SaveChanges();
+tx.Commit();
+
+//********************************************************************
+
+// سطح ایزولاسیون = Read Committed
+using var tx = context.Database.BeginTransaction(System.Data.IsolationLevel.ReadCommitted);
+
+var car = context.Cars.First(c => c.Id == carId);
+
+// مثلاً افزایش شمارنده بازدید
+car.ViewCount += 1;
+
+context.SaveChanges();   // تراکنش دوم همین کار را می‌کند اما بعد از Commit اولی
+tx.Commit();
+
+
+//****************************************************************************************************
+
+Serializable     سخت‌گیرانه‌ترین؛ انگار شما تنها کاربر سیستم هستید (قفل یا Rollback روی تداخل).
+RepeatableRead  اگر یک داده را خواندید، تا پایان تراکنستان همان مقدار را مجدداً می‌بینید (کسی دیگر نمی‌تواند آن را تغییر دهد).
+ReadCommitted   فقط داده‌هایی را می‌بینید که تا لحظهٔ خواندن کامیت شده‌اند (پیش‌فرض اکثر دیتابیس‌ها).
+
+//*****************************************************************************************************
+
+
+
+
+
+
+
+
+
+
+
+
