@@ -1,0 +1,168 @@
+ابتدا از طریق محیط داس حتما بصورت ادمین استوری  وارد مسیر زیر میشویم
+C:\Windows\Microsoft.NET\Framework\v4.0.30319
+سپس کد زیر به همراه مسیر پروژه و نام پروژه را وارد میکنیم
+
+
+InstallUtil.exe مسیر بین پروژه و نام فایل
+
+InstallUtil.exe E:\projectEducation\OnlineShop\OnlineShop\WindowsService_App\bin\Debug\WindowsService_App   برای  نصب سرویس
+InstallUtil.exe -u  E:\projectEducation\OnlineShop\OnlineShop\WindowsService_App\bin\Debug\WindowsService_App   برای  حذف سرویس
+در سرویس خود ویندوز میتوانید این سرویس را پیدا کنید و آن استارت بزنید
+
+//*******************************************************
+برای اینکه این گونه پروژه ها را بتوانیم روی سیستم خودمان دیباگ کنیم باید تغییراتی در فایل زیر انجام دهیم
+
+program.cs
+
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.ServiceProcess;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace WindowsService_App
+{
+    internal static class Program
+    {
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        static void Main()
+        {
+            ServiceBase[] ServicesToRun;
+            ServicesToRun = new ServiceBase[]
+            {
+                new Service1()
+            };
+           
+            if(Environment.UserInteractive)
+            {
+                RunInteractive(ServicesToRun);
+            }
+            else
+            {
+                ServiceBase.Run(ServicesToRun);
+            }
+        }
+
+
+        static void RunInteractive(ServiceBase[] servicesToRun)
+        {
+            Console.WriteLine("Services running in interactive mode.");
+            Console.WriteLine();
+
+            MethodInfo onStartMethod = typeof(ServiceBase).GetMethod("OnStart",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            foreach (ServiceBase service in servicesToRun)
+            {
+                Console.Write("Starting {0}...", service.ServiceName);
+                onStartMethod.Invoke(service, new object[] { new string[] { } });
+                Console.Write("Started");
+            }
+
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine(
+                "Press any key to stop the services and end the process...");
+            Console.ReadKey();
+            Console.WriteLine();
+
+            MethodInfo onStopMethod = typeof(ServiceBase).GetMethod("OnStop",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            foreach (ServiceBase service in servicesToRun)
+            {
+                Console.Write("Stopping {0}...", service.ServiceName);
+                onStopMethod.Invoke(service, null);
+                Console.WriteLine("Stopped");
+            }
+
+            Console.WriteLine("All services stopped.");
+            // Keep the console alive for a second to allow the user to see the message.
+            Thread.Sleep(1000);
+        }
+
+
+
+
+
+
+    }
+}
+
+
+//*****************************************************************************************
+در فایل زیر 
+service.design 
+کلیک راست نموده و گزینه 
+AddInstaller
+را میزینم و یکسری تنظیمات انجام میدهیم
+
+namespace WindowsService_App
+{
+    partial class ProjectInstaller
+    {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary> 
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Component Designer generated code
+
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.serviceProcessInstaller1 = new System.ServiceProcess.ServiceProcessInstaller();
+            this.serviceInstaller1 = new System.ServiceProcess.ServiceInstaller();
+            // 
+            // serviceProcessInstaller1
+            // 
+            this.serviceProcessInstaller1.Account = System.ServiceProcess.ServiceAccount.LocalSystem;//اضافه شود
+            this.serviceProcessInstaller1.Password = null;
+            this.serviceProcessInstaller1.Username = null;
+            // 
+            // serviceInstaller1
+            // 
+            this.serviceInstaller1.ServiceName = "AppSamad";
+            this.serviceInstaller1.DisplayName = "AppSamad";//اضافه شود
+            this.serviceInstaller1.Description = "WindowsService_App";//اضافه شود
+           
+            // 
+            // ProjectInstaller
+            // 
+            this.Installers.AddRange(new System.Configuration.Install.Installer[] {
+            this.serviceProcessInstaller1,
+            this.serviceInstaller1});
+
+        }
+
+        #endregion
+
+        private System.ServiceProcess.ServiceProcessInstaller serviceProcessInstaller1;
+        private System.ServiceProcess.ServiceInstaller serviceInstaller1;
+    }
+}
+
+//***********************************************************************************
+سپس هنگامی که وارد سرویس های ویندوز شویم باید سرویس زیر را پیدا کنیم
+AppSamad
+//************************************************************************************
