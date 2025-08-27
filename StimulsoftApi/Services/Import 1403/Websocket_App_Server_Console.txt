@@ -1,0 +1,131 @@
+using System.Collections.Concurrent;
+using System.Net;
+using System.Net.WebSockets;
+using System.Text;
+
+class Program
+{
+    static async Task Main(string[] args)
+    {
+        var prefix = "http://localhost:5000/ws/";
+        using var listener = new HttpListener();
+        listener.Prefixes.Add(prefix);
+        listener.Start();
+        Console.WriteLine($"listenering ....{prefix}");
+        var clients = new ConcurrentDictionary<string, WebSocket>();//لیست کلاینتها
+       
+        _ = Task.Run(() => ServerInputLoopAsync(clients));//ارسال پیام از سرور به تمام کلاینتها
+
+        while (true)
+        {
+            var ctx = await listener.GetContextAsync();
+            if (!ctx.Request.IsWebSocketRequest)
+            {
+                ctx.Response.StatusCode = 400;
+                ctx.Response.Close();
+                continue;
+            }
+            _ = Task.Run(() => handelWebSocket(ctx, clients));//دریافت پیمامهای کلاینت و ارسال آن به تمام کلاینت های دیگر
+        }
+    }
+
+
+
+    static async Task ServerInputLoopAsync(ConcurrentDictionary<string, WebSocket> clients)
+    {
+        while (true)
+        {
+
+            var txt=await Task.Run(()=>Console.ReadLine());
+            if (string.IsNullOrWhiteSpace(txt)) continue;
+            if (txt.Equals("exit", StringComparison.OrdinalIgnoreCase)) break;
+            var bytes=Encoding.UTF8.GetBytes($"[Server:]{txt}");
+            foreach (var item in clients)
+            {
+                if(item.Value.State==WebSocketState.Open)
+                {
+                    try
+                    {
+                        await item.Value.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+
+                    }
+                    catch  
+                    {
+                        clients.Remove(item.Key, out _);
+                    }
+                }
+            }
+
+        }
+    }
+
+
+    static async Task handelWebSocket(HttpListenerContext ctx, ConcurrentDictionary<string, WebSocket> clients)
+    {
+        var wsCtx = await ctx.AcceptWebSocketAsync(null);
+        using var ws = wsCtx.WebSocket;
+        var clientId = Guid.NewGuid().ToString()[..8];
+        clients.TryAdd(clientId, ws);
+
+        Console.WriteLine($"client {clientId} connected. total {clients.Count}");
+        var buffer = new byte[1024 * 4];
+
+        try
+        {
+            while (ws.State == System.Net.WebSockets.WebSocketState.Open)
+            {
+                var res = await ws.ReceiveAsync(buffer, CancellationToken.None);
+                if (res.MessageType == WebSocketMessageType.Close) break;
+
+
+                var msg = Encoding.UTF8.GetString(buffer, 0, res.Count);
+                Console.WriteLine($"{clientId}:{msg}");
+
+                var outgoing = $"[{clientId}]:{msg}";
+                var bytes = Encoding.UTF8.GetBytes(outgoing);
+                foreach (var item in clients)
+                {
+                    if (item.Key == clientId) continue;//اختیاری :برای خودش ارسال نکن
+                    
+                    if (item.Value.State == WebSocketState.Open)
+                    {
+                        try
+                        {
+                            if (msg.Contains(("_"+item.Key)))//اگر در انتهای پیامی که ارسال میشود شناسه گیرنده مشخص باشد فقط برای کلاینت مورد نظر ارسال کن
+                            {
+                                msg = msg.Replace(("_" + item.Key),"");
+                                bytes =Encoding.UTF8.GetBytes(msg);
+                                await item.Value.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+                                break;
+                            }
+                            else
+                            {
+                                await item.Value.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                        }
+                    }
+                }
+                
+            }
+
+        }
+        catch (Exception)
+        {
+            throw;
+        }
+        finally
+        {
+            clients.TryRemove(clientId, out _);
+            if (ws.State == WebSocketState.Open)
+                await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "bye", CancellationToken.None);
+            Console.WriteLine($"client {clientId} disconnected.total:{clients.Count}");
+        }
+
+    }
+
+}
+
+

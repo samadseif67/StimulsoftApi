@@ -1,0 +1,6 @@
+function SetBackGroundTdInRowInJqGridByInputColor(GridNameID, RowID,ColorCode) {
+    var backgroundColor = "background:" + ColorCode + " !important";
+    $("#" + GridNameID).find("tr#" + RowID).find("td").attr("style", function (_, style) {
+        return ((style) + backgroundColor).replace('"', '');
+    });
+}

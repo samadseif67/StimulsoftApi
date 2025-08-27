@@ -1,9 +1,16 @@
-SELECT  c.name        AS [Column],
-        t.name        AS [DataType],
-        c.max_length  AS [MaxLen],
-        c.precision   AS [Precision],
-        c.scale       AS [Scale]
+ اطلاعات ورودی یک پروسیجر را برمیگرداند
+
+exec sp_help  [spLoadGridContracts]  
+
+
+
+//************************************************************************
+اطلاعات خروجی یک پروسیجر 
+
+SELECT rs.column_ordinal, rs.name,rs.system_type_name
 FROM    sys.dm_exec_describe_first_result_set
-        ('EXEC dbo.YourStoredProcedureName', NULL, 0) AS rs
+        ('EXEC dbo.spLoadGridContracts', NULL, 0) AS rs
 JOIN    sys.types AS t
-        ON t.user_type_id = rs.system_type_id;
+        ON t.user_type_id = rs.system_type_id
+
+		order by rs.column_ordinal asc
