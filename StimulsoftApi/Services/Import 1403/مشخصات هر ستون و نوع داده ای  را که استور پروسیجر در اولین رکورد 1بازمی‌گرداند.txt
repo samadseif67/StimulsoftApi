@@ -1,0 +1,9 @@
+SELECT  c.name        AS [Column],
+        t.name        AS [DataType],
+        c.max_length  AS [MaxLen],
+        c.precision   AS [Precision],
+        c.scale       AS [Scale]
+FROM    sys.dm_exec_describe_first_result_set
+        ('EXEC dbo.YourStoredProcedureName', NULL, 0) AS rs
+JOIN    sys.types AS t
+        ON t.user_type_id = rs.system_type_id;

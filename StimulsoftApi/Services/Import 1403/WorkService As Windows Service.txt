@@ -1,0 +1,25 @@
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+  </ItemGroup>
+
+
+
+
+dotnet add package Microsoft.Extensions.Hosting.WindowsServices
+
+
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = "My Worker Service";
+});
+
+
+//کد زیر در محیط داس بصورت ادمین استریتور اجرا شود
+
+sc.exe create "MyWorkerService" binPath="مسیر پاپلیش" DisplayName="My Worker Service" start=auto
+sc.exe create "MyWorkerService" binPath="C:\Path\To\YourApp.exe" DisplayName="My Worker Service" start=auto
+
+
+
