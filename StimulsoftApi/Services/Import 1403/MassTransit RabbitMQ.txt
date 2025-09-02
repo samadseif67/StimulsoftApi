@@ -1,0 +1,246 @@
+docker pull rabbitmq:management  
+docker run -p 15672:15672 -p 5672:5672 rabbitmq:management 
+
+
+//**************************************************************
+login with username: guest  password: guest
+
+
+//**************************************************************
+
+dotnet new sln -o Warehouse     
+cd Warehouse
+
+dotnet new WebApi -o Warehouse.Catalog
+dotnet new sln add Warehouse.Catalog/Warehouse.Catalog.csproj
+cd Warehouse.Catalog
+
+
+
+//*************************************************************
+
+
+
+dotnet add Warehouse.Catalog.csproj package MassTransit     
+dotnet add Warehouse.Catalog.csproj package MassTransit.RabbitMQ     
+dotnet add Warehouse.Catalog.csproj package MassTransit.AspNetCore
+
+
+
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup> 
+  <TargetFramework>net6.0</TargetFramework> 
+  <Nullable>enable</Nullable> 
+  <ImplicitUsings>enable</ImplicitUsings> 
+  </PropertyGroup> 
+
+  <ItemGroup> 
+  <PackageReference Include="MassTransit" Version="8.0.13" />
+  <PackageReference Include="MassTransit.AspNetCore" Version="7.3.1" /> 
+  <PackageReference Include="MassTransit.RabbitMQ" Version="8.0.13" /> 
+  <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" /> 
+  </ItemGroup> 
+</Project>
+//*********************************************************
+
+namespace Warehouse.Catalog.Models; 
+public class ProductCreateDto 
+{ 
+    public string? Code { get; set; } 
+    public string? Name { get; set; 
+}
+//*********************************************************
+
+using MassTransit; 
+namespace Warehouse.Catalog; 
+
+public static class ConfigurationService 
+{ 
+   public static IServiceCollection AddServices(this IServiceCollection services)
+ { 
+    services.AddMassTransit(x=>
+    { 
+      x.UsingRabbitMq((ctx,cfg)=>
+        { 
+            cfg.Host("localhost","/" , c=> 
+            { 
+              c.Username("guest");
+              c.Password("guest"); 
+             }); 
+            cfg.ConfigureEndpoints(ctx); 
+        }); 
+      }); 
+   return services; 
+ } 
+}
+
+//*************************************************
+using Warehouse.Catalog; 
+
+var builder = WebApplication.CreateBuilder(args); 
+// Add services 
+builder.Services.AddServices(); 
+-- the rest of the code goes here
+
+//************************************************
+
+
+
+namespace Warehouse.Contracts; 
+public interface ProductMessage 
+{ 
+     public string Code { get; set; } 
+     public string Name { get; set; } 
+}
+
+//************************************************
+
+using MassTransit; 
+using Microsoft.AspNetCore.Mvc; 
+using Warehouse.Catalog.Models; 
+using Warehouse.Contracts; 
+
+namespace Warehouse.Catalog.Controllers; 
+
+[ApiController] 
+[Route("api/[controller]")] 
+public class ProductController: ControllerBase 
+{ 
+    private readonly IPublishEndpoint _publish; 
+    public ProductController(IPublishEndpoint publish) 
+    { 
+      _publish=publish; 
+
+   } 
+
+   [HttpPost] 
+   public Task Post([FromBody]ProductCreateDto product )
+   { 
+      _publish.Publish<ProductMessage>(new 
+          { 
+             Code=product.Code, Name=product.Name
+           }); 
+         return Task.CompletedTask; 
+    } 
+}
+
+//**********************************************************************************************************************************************************************************************************
+//**********************************************************************************************************************************************************************************************************
+consumer مصرف کننده
+
+dotnet new WebApi -o Warehouse.Stock
+dotnet new sln add Warehouse.Catalog/Warehouse.Stock.csproj
+cd Warehouse.Stock
+
+*********************************************************************
+
+dotnet add Warehouse.Stock.csproj package MassTransit     
+dotnet add Warehouse.Stock.csproj package MassTransit.RabbitMQ     
+dotnet add Warehouse.Stock.csproj package MassTransit.AspNetCore
+
+
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup> 
+  <TargetFramework>net6.0</TargetFramework> 
+  <Nullable>enable</Nullable> 
+  <ImplicitUsings>enable</ImplicitUsings> 
+  </PropertyGroup> 
+<ItemGroup> 
+  <PackageReference Include="MassTransit" Version="8.0.13" />
+  <PackageReference Include="MassTransit.AspNetCore" Version="7.3.1" /> 
+  <PackageReference Include="MassTransit.RabbitMQ" Version="8.0.13" /> 
+  <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" /> 
+  </ItemGroup> 
+</Project>
+
+
+*************************************************************************
+
+
+namespace Warehouse.Stock;
+using MassTransit;
+using System.Reflection;
+public static class ConfigurationService
+{
+    public static IServiceCollection AddServices(this IServiceCollection services)
+    {
+        services.AddMassTransit(m=>
+        {
+            m.AddConsumers(Assembly.GetExecutingAssembly());
+             m.UsingRabbitMq((ctx,cfg)=>
+             {
+                cfg.Host("localhost","/",c=>
+                {
+                    c.Username("guest");
+                    c.Password("guest");
+                });
+                cfg.ConfigureEndpoints(ctx);
+             });
+        });
+        return services;
+    }
+}
+
+******************************************************************************
+
+using Warehouse.Stock; 
+var builder = WebApplication.CreateBuilder(args); 
+// Add services 
+builder.Services.AddServices(); 
+
+******************************************************************************
+
+
+namespace Warehouse.Contracts; 
+public interface ProductMessage 
+{ 
+     public string Code { get; set; } 
+     public string Name { get; set; } 
+}
+
+
+****************************************************************************
+
+namespace Warehouse.Services;
+
+using System.Threading.Tasks;
+using MassTransit;
+using Warehouse.Contracts;
+
+public class ProductConsumer: IConsumer<ProductMessage>
+{
+    private readonly ILogger<ProductConsumer> _logger;
+    public ProductConsumer(ILogger<ProductConsumer> logger)
+    {
+        _logger=logger;
+    }
+    public Task Consume(ConsumeContext<ProductMessage> context)
+    {
+           _logger.LogInformation(" [*] Message received Code: {code} ,Name: {name} ",context.Message.Code,context.Message.Name);
+          return Task.CompletedTask;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
