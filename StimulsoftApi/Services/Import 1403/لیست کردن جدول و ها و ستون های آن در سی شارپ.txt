@@ -1,0 +1,6 @@
+var tables = _context.Model.GetEntityTypes()
+    .Select(t => new
+    {
+        TableName = t.GetTableName(),
+        Columns = t.GetProperties().Select(p => p.Name).ToList()
+    }).ToList();

@@ -1,0 +1,1 @@
+            db.ChangeTracker.Entries().Select(x => new { EntityName = x.Entity.GetType().Name, State = x.State.ToString() }).ToList();

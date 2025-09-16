@@ -4,6 +4,16 @@ let name="ali";
 let age=18;
 let isCorrect=true;
 
+
+Global Scope متغییر های که بصورتی عمومی در صفحه تعریف میشود
+
+this این کلمه به یک آبجکتی که داخل آن است اشاره میکند 
+
+var product={
+title:'ali',
+des:this.title // به علی اشاره میکند
+}
+
 //***********************************************************************************************************
 جمع چند تا رشته یا متغییر
 
@@ -109,7 +119,7 @@ this
    this.title=title;
    this.price=price;
 
-   this.sum=()=>
+   this.sum=()=> //به تابع داخلی تابع نستد گفته میشود --nested
    {
     console.log(`${this.title} is ${this.price}`);
    }
@@ -170,6 +180,206 @@ let div1=document.querySelector("#div1");//برای پیدا کردن یک ال�
 let bgRed=document.querySelectorAll(".bg-red-200");//برای پیدا کردن تمام المنتهای که کلاس مورد نظر را دارند
 
 //*********************************************************************************************************************
+اگر یک متغییر همنام با نام یک تابع باشد 
+
+    //precedence  الگوی
+
+
+    var title="ali" ;//اگر مقدار دهی اولیه شده باشد
+
+    function title() { //تابع همنام متعییر
+        console.log("title 1");
+    }
+  
+
+    console.log(title);//اگر متغییر بالا مقدار دهی اولیه شده باشد مقدار متغییر نمایش داده می شود اما اگر مقدار دهی نشده باشد به تابع هم نام متغییر اشاره میکند
+
+//*******************************************************************************************************************
+مدل تعریف توابع 
+
+
+    title1();//در این مدل تعریف توابع قبل از صدا زدن خطا نمیدهد
+    function title1() {
+        console.log("title 1");
+    }
+  
+
+
+
+    title2();//در این مدل تعریف توابع قبل از صدا زدن خطا میدهد
+    var  title2=function() {
+        console.log("title 2");
+    }
+
+   title2();//اگر بعد تابع باشد دیگر خطا نمیدهد پس بهتر است از روش اول که خطا نمیدهد استفاده کنیم
+
+//**********************************************************************************************************************
+
+
+//closoure  مفهموم
+
+    function testCreate() {  //یک
+
+        var title = "mohamadAli";
+
+        return function () { //دو
+            console.log(title);
+        };
+
+    }
+
+    var craete = testCreate();//یک را صدا میزند
+    craete();//دو را صدا میزند
+
+
+//*************************************************************************************************************************
+
+
+
+    function CreateTest()
+    {
+
+        alert('test1');
+    }
+
+  setTimeout(CreateTest,3000);//بعد از 3 ثانیه بعد تابع بالا را اجرا کن
+
+//**************************************************************************************************************************
+
+ //callback  روش استفاده
+
+    function CreateTest(a, b, sum) {
+        var c = a + b;
+        sum(c);
+    }
+
+    CreateTest(10, 20, function (result) {
+        console.log(result);
+    })
+
+//************************************************************************************************************************
+
+fetch  //برای فراخوانی اطلاعات از ای پی آی
+
+
+
+async function getData() {
+
+  const url = "https://example.org/products.json";
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log(result);
+  } catch (error) {
+    console.error(error.message);
+  }
+
+}
+
+//--------------------------------------------------------------------
+
+const request = new Request("https://example.org/post", {
+  method: "POST",
+  body: JSON.stringify({ username: "example" }),
+});
+
+const response1 = await fetch(request);
+console.log(response1.status);
+
+// Will throw: "Body has already been consumed."
+const response2 = await fetch(request);
+console.log(response2.status);
+
+
+//-------------------------------------------------------------------
+
+const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
+
+const myRequest = new Request("https://example.org/post", {
+  method: "POST",
+  body: JSON.stringify({ username: "example" }),
+  headers: myHeaders,
+});
+
+const response = await fetch(myRequest);
+
+
+
+
+
+//*****************************************************************************************************************************
+//Promise  برگرداندن یک مقدار از خروجی که زمان بر است مثلا درخواست به سمت وب سرویس مثلا در ایجکس جی کوئری داخل جی کوئری 
+
+
+const promiseA = new Promise((resolve, reject) => {
+  resolve(777);
+});
+// At this point, "promiseA" is already settled.
+promiseA.then((val) => console.log("asynchronous logging has val:", val));
+console.log("immediate logging");
+
+
+
+//********************************************************************************************************************************
+closest  برای پیدا کردن پدر یک بچه 
+
+
+<div id="Div1">
+<div class="A4">111</div>
+<div class="A4">222</div>
+<div class="A4 A44">333</div>
+<div class="A4">444</div>
+</div>
+
+
+ var allElement=document.getElementsByClassName("A44")[0].closest("#Div1").querySelectorAll(".A4");
+
+ allElement.forEach((item)=>{
+    item.style.background="#CCC";
+    item.style.marginTop="10px";
+    item.style.width="50%";
+    console.log(item.innerText);
+ })
+
+
+//******************************************************************************************************************************
+گرفتن مقادیر المنت ها 
+
+  <input type="text" name="name" id="name">
+  <input type="text" name="family" id="family">
+  <input type="button" value="ثبت" id="BtnSave">
+
+
+  document.getElementById("BtnSave").addEventListener("click", () => {
+
+    let name = document.getElementById("name");
+    let family = document.getElementById("family");
+
+    console.log(name.value, family.value);
+
+  })
+
+
+//******************************************************************************************************************************
+بررسی تغییرات اندازه صفحه وب 
+
+ window.addEventListener('resize', ()=>{
+
+    console.log(this.innerWidth);
+
+  });
+
+
+//***************************************************************************************************************************
+
+
+
+
 
 
 

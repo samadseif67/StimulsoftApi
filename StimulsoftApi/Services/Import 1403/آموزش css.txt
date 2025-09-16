@@ -1,0 +1,136 @@
+الگوی نام گذاری برای کلاس ها 
+بخش - نوع-وضعیت
+
+1-بخش:header,footer,...
+2-نوع:image,title,item
+3-وضعیت:dark,middle,left,Right
+
+مثال:
+
+<div class="nav">
+<ul class="nav-list">
+<li class="nav-item"></li>
+</ul>
+</div>
+
+
+<div class="header">
+<div class="header-title"></div>
+<div class="header-milddle"></div>
+<input type="button" value="ثبت" class="btn-save-dark"/>
+</div>
+
+
+
+
+//***********************************************************************
+
+
+
+xs: < 576px    موبایل‌های کوچک   ----- کوچکترین حالت — حتی موبایل‌های قدیمی یا در حالت عمودی. همه المان‌ها به صورت ستونی (۱۰۰%) نمایش داده می‌شوند
+sm: ≥ 576px   موبایل‌های بزرگ + تبلت‌های کوچک ---موبایل‌های 6.1 اینچی به بالا (مثل iPhone 13) و تبلت‌های کوچک (مثل iPad Mini). معمولاً 2 تا در یک سطر نمایش داده می‌شوند.
+md: ≥ 768px   تبلت‌های 10 اینچی (مثل iPad) و لپ‌تاپ‌های کوچک در حالت افقی. اغلب 3 یا 4 تا در یک سطر نمایش داده می‌شوند.----- تبلت‌های بزرگ + لپ‌تاپ‌های کوچک
+lg: ≥ 992px    لپ‌تاپ‌های معمولی و مانیتورهای کوچک --- لپ‌تاپ‌های 13–15 اینچی، مانیتورهای کوچک (1080p). این نقطه اغلب برای نمایش کامل نسخه دسکتاپ استفاده می‌شود.
+xl: ≥ 1200px  مانیتورهای بزرگ و دسکتاپ‌های پردازشی --- مانیتورهای 24 اینچی و بالاتر. اینجا معمولاً 4 یا 6 ستون نمایش داده می‌شود.
+xxl: ≥ 1400px  مانیتورهای فوق‌العاده بزرگ + چند صفحه‌ای
+
+//*****************************************************
+موبایل      col-12
+تبلت کوچک   col-sm-6     
+تبلت بزرگ   col-md-4
+لپ‌تاپ      col-lg-3
+
+می‌خواهید همه دستگاه‌ها را پشتیبانی کنید  col-12 col-sm-6 col-md-4 col-lg-3
+//****************************************************
+
+.products-parent
+{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2%;
+    
+    
+}
+
+
+.product-item {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    flex: 1;
+    min-width: 23%;
+    max-width: 23%;
+    height: 190px;
+    margin-top: 10px;
+}
+ 
+
+@media (max-width: 768px) {
+    .product-item {
+      min-width: 28%; /* هر دیو در یک سطر جداگانه */
+    }
+  }
+
+
+//****************************************************
+نام گذاری 
+
+<div class="product-card">
+  <h3 class="product-card__title">لپ‌تاپ</h3>
+  <p class="product-card__price">۱,۲۰۰,۰۰۰ تومان</p>
+  <button class="btn btn--primary product-card__btn">خرید</button>
+</div>
+
+
+//****************************************************
+CSS Variables 
+
+
+:root {
+  --primary-color: #007bff;
+  --secondary-color: #6c757d;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --font-size-base: 1rem;
+  --border-radius: 0.3rem;
+}
+
+.btn {
+  background-color: var(--primary-color);
+  padding: var(--spacing-sm) var(--spacing-xs);
+  border-radius: var(--border-radius);
+}
+
+
+//***************************************************
+ ریسپانسیو حرفه‌ای 
+
+
+/* موبایل (پیش‌فرض) */
+.card { margin-bottom: 1rem; }
+
+/* تبلت */
+@media (min-width: 768px) {
+  .card { margin-bottom: 1.5rem; }
+}
+
+/* دسکتاپ */
+@media (min-width: 992px) {
+  .card { display: flex; }
+}
+
+
+//*****************************************************
+
+
+
+
+
+
+
+
+
+
+
