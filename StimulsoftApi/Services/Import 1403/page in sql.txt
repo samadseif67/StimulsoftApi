@@ -1,0 +1,9 @@
+-- صفحه‌ی ۳، هر صفحه ۲۰ ردیف
+DECLARE @PageSize INT = 20;
+DECLARE @PageNum  INT = 3;
+
+SELECT  *
+FROM    dbo.Products
+ORDER BY ProductID                -- حتماً نیاز به ORDER BY داریم
+OFFSET (@PageNum-1)*@PageSize ROWS  --ردیف های که نمیخواهیم
+FETCH NEXT @PageSize ROWS ONLY;    --ردیف های که میخواهیم

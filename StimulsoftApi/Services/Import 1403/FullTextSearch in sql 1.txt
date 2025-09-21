@@ -1,0 +1,15 @@
+-- ایجاد یک کاتالوگ متنی جدید (در صورت نیاز)
+CREATE FULLTEXT CATALOG ftCatalog AS DEFAULT;
+
+
+-- ایجاد Full-Text Index روی فیلد ProductCode
+CREATE FULLTEXT INDEX ON Products(ProductCode)
+KEY INDEX PK_Products  -- نام ایندکس کلید اصلی جدول
+WITH STOPLIST = SYSTEM;  -- اختیاری: استفاده از لیست کلمات توقف پیش‌فرض
+
+
+
+
+-- جست‌وجوی سریع با Full-Text
+SELECT * FROM Products
+WHERE CONTAINS(ProductCode, 'ABC');

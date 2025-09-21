@@ -1,0 +1,19 @@
+Project/
+├── Core/
+│   ├── Entities/
+│   │   └── Product.cs
+│   └── Interfaces/
+│       └── IProductRepository.cs
+├── Infrastructure/
+│   ├── Data/
+│   │   └── AppDbContext.cs
+│   └── Repositories/
+│       └── ProductRepository.cs
+├── Application/
+│   ├── Services/
+│   │   └── ProductService.cs
+│   └── DTOs/
+│       └── ProductDto.cs
+└── Web/
+    └── Controllers/
+        └── ProductController.cs

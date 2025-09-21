@@ -1,0 +1,8 @@
+var product = new Product { Id = 1, Name = "New Name", Price = 2000 };
+
+// EF این موجودیت را نمی‌شناسد — پس باید Attach کنیم
+_context.Products.Attach(product);
+_context.Entry(product).Property(p => p.Name).IsModified = true;
+// فقط Name تغییر کرده — Price نه!
+
+await _context.SaveChangesAsync();

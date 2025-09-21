@@ -1,0 +1,425 @@
+// در Program.cs یا یک Middleware جداگانه
+app.UseSerilogRequestLogging(); // اگر از Serilog.AspNetCore استفاده کنید — خیلی ساده!
+
+
+
+app.Use(async (context, next) =>
+{
+    var sw = Stopwatch.StartNew();
+    _logger.LogInformation("Started request {Method} {Url}", context.Request.Method, context.Request.Path);
+
+    await next();
+
+    sw.Stop();
+    _logger.LogInformation("Finished request {Method} {Url} in {ElapsedMs}ms with status {StatusCode}",
+        context.Request.Method,
+        context.Request.Path,
+        sw.ElapsedMilliseconds,
+        context.Response.StatusCode);
+});
+
+
+//*********************************************************************************************************
+همه Exceptionهای غیرمنتظره باید لاگ شوند
+
+-------
+روش اول
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+// تنظیم Serilog
+builder.Host.UseSerilog((ctx, lc) => lc
+    .ReadFrom.Configuration(ctx.Configuration)
+    .WriteTo.Console()
+    .WriteTo.Seq("http://localhost:5341") // یا Elasticsearch
+);
+
+var app = builder.Build();
+
+// Middleware مدیریت خطا
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+
+        var exceptionHandlerPathFeature = 
+            context.Features.Get<IExceptionHandlerPathFeature>();
+
+        var exception = exceptionHandlerPathFeature?.Error;
+
+        // 🔥 لاگ کردن Exception با Serilog
+        Log.Fatal(exception, "خطای غیرمنتظره در درخواست: {Path}", context.Request.Path);
+
+        // ارسال پاسخ JSON به کلاینت
+        await context.Response.WriteAsync(new
+        {
+            StatusCode = 500,
+            Message = "خطای داخلی سرور رخ داد.",
+            // در محیط توسعه می‌توانید جزئیات Exception را نمایش دهید:
+            // Detail = exception?.ToString()
+        }.ToString());
+    });
+});
+
+// فقط در محیط توسعه
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+app.UseRouting();
+app.MapControllers(); // یا MapGet و ...
+
+app.Run();
+
+
+
+
+
+
+-------
+روش دوم
+// Controllers/ErrorController.cs
+
+[ApiController]
+[ApiExplorerSettings(IgnoreApi = true)] // مخفی کردن از Swagger
+public class ErrorController : ControllerBase
+{
+    [Route("/error")]
+    public IActionResult Error()
+    {
+        var exceptionHandlerPathFeature = 
+            HttpContext.Features.Get<IExceptionHandlerPathFeature>();
+
+        var exception = exceptionHandlerPathFeature?.Error;
+
+        // 🔥 لاگ کردن Exception
+        Serilog.Log.Fatal(exception, "خطای غیرمنتظره در مسیر: {Path}", exceptionHandlerPathFeature?.Path);
+
+        return Problem(
+            title: "خطای سرور",
+            detail: "متاسفانه خطایی در سرور رخ داده است.",
+            statusCode: 500
+        );
+    }
+}
+
+app.UseExceptionHandler("/error"); // هدایت به کنترلر خطا
+
+---------
+روش سوم
+
+
+// Middleware/GlobalExceptionHandlerMiddleware.cs
+
+public class GlobalExceptionHandlerMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
+
+    public GlobalExceptionHandlerMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlerMiddleware> logger)
+    {
+        _next = next;
+        _logger = logger;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
+        {
+            await _next(context);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "خطای غیرمنتظره در درخواست: {Path}", context.Request.Path);
+
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/problem+json";
+
+            var problem = new ProblemDetails
+            {
+                Status = 500,
+                Title = "خطای سرور",
+                Detail = "متاسفانه خطایی در سرور رخ داده است.",
+                Instance = context.Request.Path
+            };
+
+            await context.Response.WriteAsJsonAsync(problem);
+        }
+    }
+}
+
+// Extension Method برای راحتی استفاده
+public static class MiddlewareExtensions
+{
+    public static IApplicationBuilder UseGlobalExceptionHandler(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+    }
+}
+
+app.UseGlobalExceptionHandler(); // به جای UseExceptionHandler
+
+//********************************************************************************************************
+دسترسی غیرمجاز
+
+// در Program.cs — بعد از UseRouting و قبل از UseEndpoints
+app.Use(async (context, next) =>
+{
+    await next();
+
+    if (context.Response.StatusCode == 401 || context.Response.StatusCode == 403)
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+
+        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "Anonymous";
+        var userName = context.User.Identity?.Name ?? "Unknown";
+        var userAgent = context.Request.Headers["User-Agent"].ToString();
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+
+        if (context.Response.StatusCode == 401)
+        {
+            logger.LogWarning(
+                "Unauthorized access attempt by user: {UserName} (ID: {UserId}) from IP: {IpAddress} to URL: {Url}. User-Agent: {UserAgent}",
+                userName, userId, ip, context.Request.Path, userAgent);
+        }
+        else if (context.Response.StatusCode == 403)
+        {
+            logger.LogWarning(
+                "Forbidden access attempt — user: {UserName} (ID: {UserId}) lacks required permissions for URL: {Url} from IP: {IpAddress}. User-Agent: {UserAgent}",
+                userName, userId, ip, context.Request.Path, userAgent);
+        }
+    }
+});
+
+//*************************************************************************************************************
+اطلاعات کاربر را به تمام لاگ‌ها اضافه کند
+
+public class UserEnricher : ILogEventEnricher
+{
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public UserEnricher(IHttpContextAccessor httpContextAccessor)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
+    {
+        var context = _httpContextAccessor.HttpContext;
+        if (context?.User != null)
+        {
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                logEvent.AddPropertyIfAbsent(propertyFactory.CreateProperty("UserId", userId));
+            }
+        }
+    }
+}
+
+builder.Host.UseSerilog((ctx, lc) => lc
+    .Enrich.With<UserEnricher>()
+    ...
+);
+
+//************************************************************************************************************
+
+نحوه پیاده‌سازی با Serilog
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.MSSqlServer(
+        connectionString: "Server=.;Database=MyApp;Trusted_Connection=true;",
+        sinkOptions: new MSSqlServerSinkOptions { TableName = "Logs", AutoCreateSqlTable = true },
+        columnOptions: new ColumnOptions()
+        {
+            AdditionalColumns = new List<SqlColumn>
+            {
+                new SqlColumn("UserId", SqlDbType.NVarChar, 128),
+                new SqlColumn("IpAddress", SqlDbType.NVarChar, 64),
+                new SqlColumn("Url", SqlDbType.NVarChar, 512)
+            }
+        })
+    .CreateLogger();
+
+
+
+public class SqlLogEnricher : ILogEventEnricher
+{
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public SqlLogEnricher(IHttpContextAccessor httpContextAccessor)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
+
+    public void Enrich(LogEvent logEvent, ILogEventPropertyFactory propertyFactory)
+    {
+        var context = _httpContextAccessor.HttpContext;
+        if (context == null) return;
+
+        // UserId
+        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId))
+            logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty("UserId", userId));
+
+        // IpAddress
+        var ip = context.Connection.RemoteIpAddress?.ToString();
+        if (!string.IsNullOrEmpty(ip))
+            logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty("IpAddress", ip));
+
+        // Url
+        var url = context.Request.Path.ToString();
+        if (!string.IsNullOrEmpty(url))
+            logEvent.AddOrUpdateProperty(propertyFactory.CreateProperty("Url", url));
+    }
+}
+
+builder.Host.UseSerilog((ctx, lc) => lc
+    .Enrich.With<SqlLogEnricher>()
+    .WriteTo.MSSqlServer(...)
+);
+
+//*****************************************************************************************************
+
+
+ارتباط Serilog با Elasticsearch
+
+
+Install-Package Serilog.Sinks.Elasticsearch
+
+
+using Serilog;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// تنظیم Serilog با Elasticsearch
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithEnvironmentUserName()
+    .WriteTo.Console()
+    .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
+    {
+        AutoRegisterTemplate = true, // ایجاد Template خودکار در Elasticsearch
+        AutoRegisterTemplateVersion = AutoRegisterTemplateVersion.ESv7, // یا ESv8
+        IndexFormat = "myapp-logs-{0:yyyy.MM.dd}", // فرمت Index — روزانه
+        MinimumLogEventLevel = LogEventLevel.Information,
+        ModifyConnectionSettings = x => x.BasicAuthentication("elastic", "your-password") // اگر Auth دارید
+    })
+    .CreateLogger();
+
+builder.Host.UseSerilog(); // ادغام با Host
+
+var app = builder.Build();
+
+
+----------------
+
+using Serilog;
+
+var logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.Elasticsearch(new ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
+    {
+        AutoRegisterTemplate = true,
+        IndexFormat = "logs-{0:yyyy.MM.dd}",
+        MinimumLogEventLevel = Serilog.Events.LogEventLevel.Information
+    })
+    .CreateLogger();
+
+Log.Logger = logger;
+
+// استفاده در برنامه
+Log.Information("این یک لاگ تست است.");
+
+
+
+----------
+
+{
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Elasticsearch" ],
+    "MinimumLevel": "Information",
+    "WriteTo": [
+      {
+        "Name": "Elasticsearch",
+        "Args": {
+          "nodeUris": "http://localhost:9200",
+          "indexFormat": "logs-{0:yyyy.MM.dd}",
+          "autoRegisterTemplate": true
+        }
+      }
+    ]
+  }
+}
+
+
+builder.Host.UseSerilog((context, config) =>
+    config.ReadFrom.Configuration(context.Configuration));
+
+//********************************************************************************************
+
+
+
+ اتصال Serilog به Seq
+
+dotnet add package Serilog.Sinks.Seq
+
+
+
+using Serilog;
+
+var logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .WriteTo.Seq("http://localhost:5341") // آدرس سرور Seq
+    .CreateLogger();
+
+Log.Logger = logger;
+
+Log.Information("این یک لاگ تست برای Seq است.");
+
+
+
+----
+
+{
+  "Serilog": {
+    "Using": [ "Serilog.Sinks.Seq" ],
+    "MinimumLevel": "Information",
+    "WriteTo": [
+      {
+        "Name": "Seq",
+        "Args": {
+          "serverUrl": "http://localhost:5341",
+          "apiKey": "your-api-key-if-any"
+        }
+      }
+    ]
+  }
+}
+
+
+builder.Host.UseSerilog((context, config) =>
+    config.ReadFrom.Configuration(context.Configuration));
+
+
+
+------
+برای محیط‌های تولید، حتماً Buffering و فول‌بک (fallback) را تنظیم کنید تا در صورت قطعی Elasticsearch یا Seq، لاگ‌ها از دست نروند.
+
+
+.WriteTo.Seq("http://localhost:5341", 
+    bufferBaseFilename: "./logs/seq-buffer")
+.WriteTo.File("./logs/fallback-.txt", rollingInterval: RollingInterval.Day)
+
+
+//*******************************************************************************************
+
+
+
+
+

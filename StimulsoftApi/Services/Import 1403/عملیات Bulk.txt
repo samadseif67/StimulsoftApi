@@ -1,0 +1,3 @@
+await _context.Products
+    .Where(p => p.Category == "Old")
+    .ExecuteUpdateAsync(s => s.SetProperty(p => p.Category, "New"));

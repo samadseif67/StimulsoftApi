@@ -1,0 +1,45 @@
+using Immutable_App.service;
+
+namespace Immutable_App.service
+{
+    public class Order
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Family { get; set; }
+    }
+
+   public class OrderBuilder
+    {
+        private  int Id { get; set; }
+        private  string _name {  get; set; }
+        private string _family { get; set; }
+
+        public static OrderBuilder orderBuilder => new ();
+       
+        public OrderBuilder WithName(string name)
+        {
+            orderBuilder._name = name;
+            return orderBuilder;
+        }
+        public OrderBuilder WithFamily(string family)
+        {
+            orderBuilder._family = family;
+            return orderBuilder;
+        }
+
+        public Order build()
+        {
+            return new Order()
+            {
+                Name = _name,
+                Family = _family
+            };
+        }
+    }
+}
+
+
+
+
+ var order = OrderBuilder.orderBuilder.WithName("ali").WithFamily("naseri").build();//نحوه فراخوانی

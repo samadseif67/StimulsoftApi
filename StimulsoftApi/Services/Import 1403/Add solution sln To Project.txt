@@ -1,0 +1,22 @@
+
+:: 1. ساخت پوشه
+mkdir MyApi
+cd MyApi
+
+
+:: 2. ساخت solution
+dotnet new sln -n MyApi          → MyApi.sln
+
+
+:: 3. ساخت پروژه WebAPI (template رسمی)
+dotnet new webapi -n MyApi.Web   → پوشه MyApi.Web و فایل .csproj داخلش
+
+
+
+:: 4. افزودن پروژه به solution
+dotnet sln add MyApi.Web\MyApi.Web.csproj
+
+
+
+
+dotnet sln yoursolution.sln add yourprojectpath/yourproject.csproj
