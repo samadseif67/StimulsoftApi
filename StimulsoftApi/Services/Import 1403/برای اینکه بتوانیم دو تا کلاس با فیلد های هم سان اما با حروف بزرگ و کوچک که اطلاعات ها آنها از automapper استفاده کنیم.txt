@@ -1,0 +1,45 @@
+برای اینکه بتوانیم دو تا کلاس با فیلد های هم سان اما با حروف بزرگ و کوچک که اطلاعات ها آنها از automapper استفاده کنیم
+
+
+
+
+
+public static class Mapper
+{
+    // نرمال‌ساز: اولین حرف را بزرگ می‌کند و بقیه را کوچک
+    private static string Normalize(string name) =>
+        char.ToUpperInvariant(name[0]) + name.Substring(1).ToLowerInvariant();
+
+    public static TDest Map<TSource, TDest>(TSource source) where TDest : new()
+    {
+        var dest = new TDest();
+        var srcProps = typeof(TSource).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var destProps = typeof(TDest).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                     .ToDictionary(p => Normalize(p.Name), p => p);
+
+        foreach (var sp in srcProps)
+        {
+            var key = Normalize(sp.Name);
+            if (destProps.TryGetValue(key, out var dp) && dp.CanWrite)
+            {
+                var value = sp.GetValue(source);
+                dp.SetValue(dest, value);
+            }
+        }
+        return dest;
+    }
+}
+
+// استفاده
+var dto  = new UserDto  { firstName = "reza", lastName = "razavi" };
+var entity = Mapper.Map<UserDto, UserEntity>(dto);
+// entity.FirstName و entity.LastName پر شده‌اند
+
+
+
+// 1) افزودن AutoMapper
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.SourceMemberNamingConvention = new LowerUnderscoreNamingConvention();
+    cfg.DestinationMemberNamingConvention = new PascalCaseNamingConvention();
+}, typeof(Program).Assembly);   // اسم اسمبلی که پروفایل‌های Map را دارد

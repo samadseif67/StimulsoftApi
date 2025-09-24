@@ -1,0 +1,334 @@
+Solid
+//*****************************************************************************************************************************************
+1- S → Single-Responsibility Principle (SRP)
+هر کلاس فقط یک «دلیل» برای تغییر داشته باشد.
+
+
+public class OrderService
+{
+    public void AddOrder(Order order)
+    {
+        // 1) اعتبارسنجی
+        if (order.Items.Count == 0) throw new Exception("سبد خالی است");
+
+        // 2) ذخیره در دیتابیس
+        using var db = new ShopContext();
+        db.Orders.Add(order);
+        db.SaveChanges();
+
+        // 3) ارسال ایمیل
+        new SmtpClient().Send(new MailMessage("shop@site.com", order.CustomerEmail, "سفارش شما ثبت شد"));
+    }
+}
+
+
+//--------------------------------------------------------------------
+اصلاح شده
+
+بعد (خوب): هر کلاس فقط یک کار می‌کند
+
+
+public class OrderValidator
+{
+    public bool IsValid(Order order) => order.Items.Count > 0;
+}
+
+public class OrderRepository
+{
+    public void Save(Order order)
+    {
+        using var db = new ShopContext();
+        db.Orders.Add(order);
+        db.SaveChanges();
+    }
+}
+
+public class EmailSender
+{
+    public void SendOrderEmail(string to) =>
+        new SmtpClient().Send(new MailMessage("shop@site.com", to, "سفارش شما ثبت شد"));
+}
+
+// فقط هماهنگ‌کننده است
+public class OrderService
+{
+    private readonly OrderValidator _validator = new();
+    private readonly OrderRepository _repo = new();
+    private readonly EmailSender _mailer = new();
+
+    public void AddOrder(Order order)
+    {
+        if (!_validator.IsValid(order)) throw new Exception("سبد خالی است");
+        _repo.Save(order);
+        _mailer.SendOrderEmail(order.CustomerEmail);
+    }
+}
+
+//*********************************************************************************************
+2-O → Open-Closed Principle (OCP)
+به‌ازای افزودن رفتار جدید کلاس‌های قبلی را نباید دست‌زد؛ باید باز برای افزایش و بسته برای تغییر باشند
+
+
+
+public class SalaryCalculator
+{
+    public decimal Calculate(Employee emp)
+    {
+        if (emp.Type == "Engineer")  return emp.BaseSalary * 1.1m;
+        if (emp.Type == "Manager")   return emp.BaseSalary * 1.3m;
+        if (emp.Type == "Intern")    return emp.BaseSalary;      // هر بار اینجا دست می‌خوریم
+        throw new Exception("نوع کارمند ناشناخته");
+    }
+}
+
+
+------------------------------------------------------------------------------
+بعد (خوب): با افزودن اینترفیس جدید نیازی به تغییر کلاس قبلی نیست
+
+public interface ISalaryStrategy
+{
+    decimal Calculate(Employee emp);
+}
+
+public class EngineerSalary : ISalaryStrategy
+{
+    public decimal Calculate(Employee emp) => emp.BaseSalary * 1.1m;
+}
+
+public class ManagerSalary : ISalaryStrategy
+{
+    public decimal Calculate(Employee emp) => emp.BaseSalary * 1.3m;
+}
+
+public class SalaryCalculator
+{
+    private readonly Dictionary<string, ISalaryStrategy> _strategies;
+
+    public SalaryCalculator() =>
+        _strategies = new()
+        {
+            ["Engineer"] = new EngineerSalary(),
+            ["Manager"]  = new ManagerSalary()
+            // اگر Intern یا نوع جدید اضافه شد فقط یک آیتم اینجا اضافه می‌کنیم؛ کلاس قبلی تغییر نمی‌کند
+        };
+
+    public decimal Calculate(Employee emp) =>
+        _strategies[emp.Type].Calculate(emp);
+}
+
+
+
+
+//************************************************************************************************
+3-L → Liskov Substitution Principle (LSP)  
+جایگزین فرزند باید بدون شکستن منطق برنامه، جای والد را بگیرد
+وقتی فرزند رفتاری متفاوت از والد دارد، باعث می‌شود کلاینت‌هایی که با والد کار می‌کنند، وقتی فرزند را می‌گیرند، دچار باگ یا استثنا شوند.
+نتایج مورد انتظار والد را حفظ کرده است
+
+
+سیستم تخفیف فروشگاه:
+
+قبل:
+
+// کلاس پایه
+public class Discount
+{
+    public virtual decimal Calculate(decimal price)
+    {
+        return price * 0.1m; // 10% تخفیف
+    }
+}
+
+// فرزند که رفتارش را نقض می‌کند
+public class NoDiscount : Discount
+{
+    public override decimal Calculate(decimal price)
+    {
+        return 0; // ❌ برمی‌گرداند 0 به جای قیمت بدون تخفیف!
+    }
+}
+
+// کلاینت
+public class PriceCalculator
+{
+    public decimal GetFinalPrice(decimal price, Discount discount)
+    {
+        var discountAmount = discount.Calculate(price);
+        return price - discountAmount; // اگر NoDiscount باشد، قیمت نهایی منفی می‌شود!
+    }
+}
+
+
+-----------------------------------------------------------------
+
+// اینترفیس مشترک
+public interface IDiscount
+{
+    decimal Apply(decimal price); // قیمت بعد از اعمال تخفیف
+}
+
+// تخفیف درصدی
+public class PercentageDiscount : IDiscount
+{
+    private readonly decimal _percentage;
+    public PercentageDiscount(decimal percentage) => _percentage = percentage;
+    
+    public decimal Apply(decimal price) => price * (1 - _percentage / 100);
+}
+
+// بدون تخفیف
+public class NoDiscount : IDiscount
+{
+    public decimal Apply(decimal price) => price; // ✅ قیمت را تغییر نمی‌دهد
+}
+
+// کلاینت
+public class PriceCalculator
+{
+    public decimal GetFinalPrice(decimal price, IDiscount discount)
+    {
+        return discount.Apply(price); // حالا هر جایگزینی کار می‌کند
+    }
+}
+
+
+//تست ساده
+
+var calculator = new PriceCalculator();
+
+var price1 = calculator.GetFinalPrice(1000, new PercentageDiscount(10)); // 900
+var price2 = calculator.GetFinalPrice(1000, new NoDiscount()); // 1000
+
+Console.WriteLine($"با تخفیف: {price1}"); // 900
+Console.WriteLine($"بدون تخفیف: {price2}"); // 1000
+
+ 
+فرزند باید نتایج مورد انتظار والد را حفظ کند. اگر والد قرار است "تخفیف را محاسبه کند"، فرزند نباید کاری کند که منطق برنامه را بهم بریزد (مثل برگرداندن مقدار اشتباه یا پرتاب استثنای ناگهانی).
+ نتایج مورد انتظار والد را حفظ کرده است
+
+
+تعریف ساده:
+والد (Parent) = کلاس یا اینترفیسی که دیگران از آن ارث می‌برند
+فرزند (Child) = کلاسی که با کلمه‌ی کلیدی : از والد ارث برده است
+
+// این والد است
+public class Animal        
+{
+    public virtual void MakeSound() => Console.WriteLine("...");
+}
+
+// این فرزند است
+public class Cat : Animal  
+{
+    public override void MakeSound() => Console.WriteLine("Meow");
+}
+
+
+//***************************************************************************************************
+4-I → Interface Segregation Principle (ISP)
+
+کسی که فقط چاپگر دارد نباید مجبور شود متد اسکن را هم پیاده کند 
+
+public interface IMachine
+{
+    void Print(Document d);
+    void Scan(Document d);
+    void Fax(Document d);
+}
+
+public class OldPrinter : IMachine   // فقط چاپ می‌کند
+{
+    public void Print(Document d) => Console.WriteLine("Printing");
+    public void Scan(Document d)  => throw new NotSupportedException(); // مجبور به پیاده‌سازی الکى
+    public void Fax(Document d)   => throw new NotSupportedException();
+}
+
+
+-------------------------------------------
+بعد (خوب): اینترفیس‌های کوچک و خاص
+
+public interface IPrinter { void Print(Document d); }
+public interface IScanner { void Scan(Document d); }
+public interface IFax { void Fax(Document d); }
+
+public class OldPrinter : IPrinter
+{
+    public void Print(Document d) => Console.WriteLine("Printing");
+}
+
+public class ModernCopier : IPrinter, IScanner, IFax
+{
+    public void Print(Document d) => Console.WriteLine("Printing");
+    public void Scan(Document d)  => Console.WriteLine("Scanning");
+    public void Fax(Document d)   => Console.WriteLine("Faxing");
+}
+
+
+//****************************************************************************************************
+
+5-D → Dependency-Inversion Principle (DIP)
+
+ماژول‌های بالادست نباید به ماژول‌های پایین‌دست وابسته باشند؛ هر دو باید به آستراکشن وابسته باشند
+
+public class OrderService
+{
+    private readonly EmailSender _sender = new();   // وابستگى سخت
+
+    public void NotifyOrderShipped(int orderId)
+    {
+        _sender.Send($"سفارش {orderId} ارسال شد");
+    }
+}
+
+-----------------------------------------------
+بعد (خوب): به اینترفیس وابسته می‌شویم و توسط Dependency-Injection پیاده‌سازی واقعى تزریق می‌شود
+
+public interface INotifier
+{
+    void Send(string message);
+}
+
+public class EmailNotifier : INotifier
+{
+    public void Send(string message) => Console.WriteLine($"[Email] {message}");
+}
+
+public class SmsNotifier : INotifier
+{
+    public void Send(string message) => Console.WriteLine($"[SMS] {message}");
+}
+
+public class OrderService
+{
+    private readonly INotifier _notifier;
+
+    public OrderService(INotifier notifier) => _notifier = notifier; // DIP
+
+    public void NotifyOrderShipped(int orderId) =>
+        _notifier.Send($"سفارش {orderId} ارسال شد");
+}
+
+// استفاده
+var service = new OrderService(new SmsNotifier()); // بدون تغییر کد OrderService می‌توانیم SMS بزنیم
+
+
+//*************************************************************************************************************
+خلاصه :
+| اصل | جملهٔ طلایی                                                            |
+| --- | ---------------------------------------------------------------------- |
+| SRP | هر کلاس فقط یک «دلیل» برای تغییر دارد                                  |
+| OCP | با افزودن کلاس جدید، کد قدیمی را دست نزن                               |
+| LSP | فرزند باید بی‌صدا جای والد را بگیرد                                    |
+| ISP | اینترفیس‌های بزرگ را نخور؛ کسی فقط همان چیزی را که نیاز دارد پیاده کند |
+| DIP | به «چی بودن» وابسته شو، نه «چطور بودن»؛ وابستگی را بیرون تزریق کن      |
+
+
+//*************************************************************************************************************
+
+
+
+
+
+
+
+
