@@ -1,0 +1,80 @@
+ 
+
+//************************************************************************************************
+//Action این نوع فقط ورودی دارد و خروجی ندارد 
+//Action<string>  یک ورودی رشته ای می پذیرد
+//Func  این نوع هم ورودی دارد و میتواند هم خروجی داشته باشدو همچنین میتواند چندین ورودی داشته باشد
+//Func<int,int,int>  دو تا ورودی و یک خروجی 
+
+
+//Func<T>                 // بدون ورودی، یک خروجی از نوع T
+//Func<T, TResult>        // یک ورودی از نوع T، خروجی از نوع TResult
+//Func < T1, T2, TResult>   // دو ورودی، یک خروجی
+
+
+app.use();//use action
+builder.service.addscoped //use action
+//*****************************************************************************
+
+
+
+
+
+//****************************************************************************
+void Test_Delegate_Action<T>(Action<T> printString, string name, Func<int, int, int> sum) where T : class, new()
+{
+    var instance = new T();
+    printString(instance);
+
+    if (instance is Person p)
+    {
+        Console.WriteLine(p.name);
+    }
+
+    Console.WriteLine(sum(10, 20));
+
+
+    Action<string> action = (m) => { Console.WriteLine(m); };
+    action("naseri");
+
+
+    Func<int, int, int, int> sum1 = (a, b, c) => { return (a + b + c); };
+    int ss = sum1(10, 20, 30);
+    Console.WriteLine(ss);
+
+
+    Func<int, int, int> action2;
+    action2 = (a, b) => {  return (a + b); };
+    int r= action2(10,20);
+    Console.WriteLine(r);
+
+}
+
+
+
+
+Test_Delegate_Action<Person>
+(
+    x =>
+    {
+        x.name = "Test";
+        x.family = "Mohamad";
+    },
+"naser",
+sumThree
+);
+
+int sumThree(int A, int B)
+{
+    return (A + B);
+}
+
+Console.ReadLine();
+//*********************************************************************************************
+
+class Person
+{
+    public string name { get; set; }
+    public string family { get; set; }
+}
+

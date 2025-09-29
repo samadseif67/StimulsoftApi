@@ -1,0 +1,73 @@
+Attribute سفارشی
+
+
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public class RoleAttribute : Attribute, IAuthorizationFilter
+{
+    private readonly string _role;
+
+    public RoleAttribute(string role) => _role = role;
+
+    public void OnAuthorization(AuthorizationFilterContext context)
+    {
+        // اگر کاربر احراز هویت نشده باشد
+        if (!context.HttpContext.User.Identity.IsAuthenticated)
+        {
+            context.Result = new UnauthorizedResult();
+            return;
+        }
+
+        // اگر نقش وجود نداشته باشد
+        if (!context.HttpContext.User.IsInRole(_role))
+        {
+            context.Result = new ForbidResult(); // یا RedirectResult("/access-denied")
+        }
+    }
+}
+
+
+//*********************************************************
+public class ProductController : Controller
+{
+    [Role("Admin")]          // ← فقط کاربران با نقش Admin
+    public IActionResult Delete(int id)
+    {
+        // منطق حذف
+        return RedirectToAction("Index");
+    }
+
+    [Role("Customer")]       // ← فقط Customerها
+    public IActionResult MyOrders()
+    {
+        return View();
+    }
+}
+
+//**********************************************************************
+
+//دارای خروجی خطا ها
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+public class RoleAttribute : Attribute, IAuthorizationFilter
+{
+    private readonly string _role;
+
+    public RoleAttribute(string role) => _role = role;
+
+    public void OnAuthorization(AuthorizationFilterContext context)
+    {
+        var errors = new List<string>();
+
+        if (!context.HttpContext.User.Identity.IsAuthenticated)
+        {
+            errors.Add("کاربر احراز هویت نشده است.");
+            context.Result = new UnauthorizedObjectResult(new { Errors = errors });
+            return;
+        }
+
+        if (!context.HttpContext.User.IsInRole(_role))
+        {
+            errors.Add($"دسترسی نیازمند نقش '{_role}' می‌باشد.");
+            context.Result = new BadRequestObjectResult(new { Errors = errors });
+        }
+    }
+}

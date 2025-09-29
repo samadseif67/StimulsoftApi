@@ -1,0 +1,88 @@
+هدف الگوی Factory:
+به جای اینکه مستقیماً با
+ new 
+یک شیء بسازید، از یک "کارخانه" بخواهید که شیء مناسب را برای شما بسازد. 
+
+//***********************************************************************************
+مثال ساده: ساخت اشیاء برای ارسال ایمیل
+
+فرض کنید می‌خواهید در برنامه‌تان از چند سرویس ایمیل استفاده کنید:
+
+یکی با Gmail
+یکی با Outlook
+اما نمی‌خواهید کد اصلی‌تان مستقیماً بداند که داره با کدام سرویس کار می‌کنه (برای انعطاف‌پذیری و تست‌پذیری).
+
+//***********************************************************************************
+مرحله ۱: تعریف یک رابط (Interface)
+
+
+public interface IEmailService
+{
+    void SendEmail(string to, string subject, string body);
+}
+
+//***********************************************************************************
+مرحله ۲: پیاده‌سازی کلاس‌های واقعی
+
+public class GmailService : IEmailService
+{
+    public void SendEmail(string to, string subject, string body)
+    {
+        Console.WriteLine($"ارسال ایمیل از طریق Gmail به {to}: {subject}");
+    }
+}
+
+public class OutlookService : IEmailService
+{
+    public void SendEmail(string to, string subject, string body)
+    {
+        Console.WriteLine($"ارسال ایمیل از طریق Outlook به {to}: {subject}");
+    }
+}
+//*******************************************************************************
+مرحله ۳: ساخت کلاس Factory
+
+public static class EmailServiceFactory
+{
+    public static IEmailService CreateEmailService(string provider)
+    {
+        return provider.ToLower() switch
+        {
+            "gmail" => new GmailService(),
+            "outlook" => new OutlookService(),
+            _ => throw new ArgumentException("ارائه‌دهنده ایمیل نامعتبر است.")
+        };
+    }
+}
+//*****************************************************************************
+مرحله ۴: استفاده در کد اصلی
+
+class Program
+{
+    static void Main()
+    {
+        string emailProvider = "gmail"; // می‌تواند از فایل تنظیمات یا ورودی کاربر بیاید
+
+        // فقط از Factory استفاده می‌کنیم، نه new!
+        IEmailService emailService = EmailServiceFactory.CreateEmailService(emailProvider);
+
+        emailService.SendEmail("user@example.com", "سلام", "این یک تست است.");
+    }
+}
+
+
+//****************************************************************************
+
+ چه فایده‌ای دارد؟
+اگر بخواهید سرویس جدیدی اضافه کنید (مثلاً Yahoo)، فقط کلاس جدید می‌سازید و Factory را آپدیت می‌کنید — کد اصلی برنامه تغییری نمی‌کند.
+
+تست کردن راحت‌تر می‌شود
+کد شما وابستگی کمتری به کلاس‌های واقعی دارد
+
+
+//******************************************************************************
+قانون طلایی (از Clean Architecture):
+"لایه‌های داخلی (مثل Domain) نباید به لایه‌های خارجی (مثل Infrastructure) وابستگی داشته باشند."
+بلکه لایه‌های خارجی باید به لایه‌های داخلی وابسته باشند (از طریق رابط‌ها). 
+
+
