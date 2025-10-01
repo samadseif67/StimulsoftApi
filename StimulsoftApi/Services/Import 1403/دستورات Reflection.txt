@@ -1,0 +1,294 @@
+//*************************************************************************************************************
+1-
+
+typeof(MyClass) → در زمان کامپایل نوع را برمی‌گرداند.
+myObject.GetType() → در زمان اجرا نوع واقعی شیء را برمی‌گرداند.
+
+
+var type = typeof(User);
+// یا
+var obj = new User();
+var type = obj.GetType();
+
+//*************************************************************************************************************
+2-Type.GetProperties()
+هدف: دریافت لیست تمام خواص (Properties) یک کلاس.
+
+var properties = typeof(User).GetProperties();
+foreach (var prop in properties)
+{
+    Console.WriteLine(prop.Name); // مثلاً: "Id", "Name"
+}
+
+//*************************************************************************************************************
+3-PropertyInfo.GetValue() و SetValue()
+
+خواندن یا تنظیم مقدار یک خاصیت در زمان اجرا.
+
+var user = new User();
+var nameProp = typeof(User).GetProperty("Name");
+
+nameProp.SetValue(user, "Ali"); // user.Name = "Ali"
+var name = nameProp.GetValue(user); // name = "Ali"
+
+//************************************************************************************************************
+
+4- Type.GetMethods()
+
+دریافت لیست متدهای یک کلاس
+
+
+var methods = typeof(UserService).GetMethods();
+foreach (var method in methods)
+{
+    Console.WriteLine(method.Name);
+}
+
+//***********************************************************************************************************
+5- MethodInfo.Invoke()
+فراخوانی یک متد در زمان اجرا.
+
+
+var service = new UserService();
+var method = typeof(UserService).GetMethod("GetUserById");
+var result = method.Invoke(service, new object[] { 123 });
+
+//***********************************************************************************************************
+6- Type.GetCustomAttributes()
+
+دریافت ویژگی‌های (Attributes) تعریف‌شده روی کلاس، متد یا خاصیت
+
+
+var attrs = typeof(User).GetProperty("Email")
+                        .GetCustomAttributes(typeof(RequiredAttribute), false);
+
+if (attrs.Length > 0)
+{
+    // این خاصیت Required است
+}
+
+//***********************************************************************************************************
+7- Activator.CreateInstance()
+
+ایجاد نمونه‌ای از یک نوع در زمان اجرا
+
+
+var user = (User)Activator.CreateInstance(typeof(User));
+// یا با پارامتر:
+var user = (User)Activator.CreateInstance(typeof(User), "Ali", "ali@example.com");
+
+
+//***************************************************************************************************************
+8- Type.IsAssignableFrom()  
+آیا جدول مورد نظر به جدول دیگر ریلیشن دارد
+بررسی اینکه آیا یک نوع قابل اختصاص به نوع دیگر است (مثلاً ارث‌بری یا پیاده‌سازی interface).
+
+
+bool isUser = typeof(User).IsAssignableFrom(typeof(Admin)); // true اگر Admin از User ارث‌بری کند
+bool isIEntity = typeof(IEntity).IsAssignableFrom(typeof(User)); // true اگر User از IEntity پیاده‌سازی کند
+
+//**************************************************************************************************************
+9-Assembly.GetTypes() یا Assembly.GetExecutingAssembly()
+
+دریافت تمام انواع (Types) موجود در یک Assembly.
+
+
+var types = Assembly.GetExecutingAssembly().GetTypes();
+foreach (var type in types)
+{
+    if (typeof(ICommandHandler).IsAssignableFrom(type) && !type.IsInterface)
+    {
+        // ثبت هندلرها در DI
+    }
+}
+
+
+//******************************************************************************************************************
+
+10- MakeGenericType() و MakeGenericMethod()
+
+ساخت نوع Generic یا متد Generic در زمان اجرا.
+
+
+// ساخت List<User>
+var listType = typeof(List<>).MakeGenericType(typeof(User));
+var list = (IList)Activator.CreateInstance(listType);
+
+// فراخوانی متد Generic
+var method = typeof(Repository).GetMethod("FindAll");
+var genericMethod = method.MakeGenericMethod(typeof(User));
+var users = genericMethod.Invoke(repo, null);
+
+//**********************************************************************************************************************
+
+1-typeof(T) / obj.GetType()    دریافت type       
+
+2-GetProperties()  لیست خواص یا همان فیلدهای داخل کلاس
+
+3-GetValue() / SetValue()  خواندن/نوشتن خاصیت
+
+4-GetMethods() / Invoke()  فراخوانی متد داینامیک
+
+5-GetCustomAttributes()   خواندن ویژگی‌ها (Attributes)
+
+6-Activator.CreateInstance()  ساخت نمونه در زمان اجرا
+
+7-IsAssignableFrom() بررسی سازگاری نوع
+
+8-Assembly.GetTypes() کشف انواع در Assembly
+
+9-MakeGenericType() ساخت نوع Generic داینامیک
+
+
+//***************************************************************************************************************************
+
+//************************************************************************************************************************
+ ثبت داینامیک هر سرویس
+
+
+
+// فرض کنید اینترفیس عمومی داریم:
+public interface IRepository<T> { }
+
+// و یک کلاس پیاده‌سازی‌کننده:
+public class UserRepository : IRepository<User> { }
+
+// در Program.cs یا Startup:
+var assembly = Assembly.GetExecutingAssembly();
+
+var serviceTypes = assembly.GetTypes()
+    .Where(t => t.IsClass && !t.IsAbstract);
+
+foreach (var type in serviceTypes)
+{
+    var interfaces = type.GetInterfaces()
+        .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRepository<>));
+
+    foreach (var iface in interfaces)
+    {
+        builder.Services.AddScoped(iface, type);
+    }
+}
+
+
+//***********************************************************************************************************
+. اعتبارسنجی داینامیک مدل
+فرض کنید می‌خواهید تمام خواصی که اسمشان با Email تمام می‌شود، حتماً شامل @ باشند — بدون نیاز به EmailAddressAttribute.
+public static bool ValidateEmailProperties(object model)
+{
+    if (model == null) return false;
+
+    var type = model.GetType();
+    var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                         .Where(p => p.Name.EndsWith("Email", StringComparison.OrdinalIgnoreCase));
+
+    foreach (var prop in properties)
+    {
+        var value = prop.GetValue(model) as string;
+        if (string.IsNullOrEmpty(value) || !value.Contains("@"))
+            return false;
+    }
+    return true;
+}
+
+// استفاده در کنترلر:
+[HttpPost]
+public IActionResult Create(UserDto dto)
+{
+    if (!ValidateEmailProperties(dto))
+    {
+        ModelState.AddModelError("Email", "Invalid email format.");
+        return BadRequest(ModelState);
+    }
+    // ...
+}
+
+//****************************************************************************************
+کپی خواص مشترک بین دو شیء
+
+public static void MapProperties(object source, object destination)
+{
+    var sourceType = source.GetType();
+    var destType = destination.GetType();
+
+    var sourceProps = sourceType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                .Where(p => p.CanRead);
+    var destProps = destType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                            .Where(p => p.CanWrite);
+
+    foreach (var srcProp in sourceProps)
+    {
+        var destProp = destProps.FirstOrDefault(p => p.Name == srcProp.Name && p.PropertyType == srcProp.PropertyType);
+        if (destProp != null)
+        {
+            var value = srcProp.GetValue(source);
+            destProp.SetValue(destination, value);
+        }
+    }
+}
+
+// استفاده:
+var user = new User { Id = 1, Name = "Ali" };
+var dto = new UserDto();
+MapProperties(user, dto); // dto.Name = "Ali"
+
+//************************************************************************************************
+خواندن مقادیر از ویژگی‌های
+خواندن مقادیر از ویژگی‌های (Attributes) روی خواص
+مشخص می‌کند آیا یک فیلد "حساس" است یا نه (مثلاً برای لاگ‌گیری)
+
+
+[AttributeUsage(AttributeTargets.Property)]
+public class SensitiveDataAttribute : Attribute { }
+
+public class User
+{
+    public int Id { get; set; }
+    
+    [SensitiveData]
+    public string Password { get; set; }
+    
+    public string Name { get; set; }
+}
+
+public static List<string> GetSensitivePropertyNames<T>()
+{
+    return typeof(T).GetProperties()
+        .Where(p => p.GetCustomAttribute<SensitiveDataAttribute>() != null)
+        .Select(p => p.Name)
+        .ToList();
+}
+
+// استفاده:
+var sensitive = GetSensitivePropertyNames<User>(); // ["Password"]
+
+
+//*************************************************************************************************
+
+ ایجاد نمونه از کلاس با constructor پارامتری
+
+public static T CreateInstanceWithDI<T>(IServiceProvider provider)
+{
+    var type = typeof(T);
+    var ctor = type.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
+    var parameters = ctor.GetParameters()
+                         .Select(p => provider.GetService(p.ParameterType))
+                         .ToArray();
+
+    return (T)Activator.CreateInstance(type, parameters);
+}
+
+// استفاده:
+var logger = CreateInstanceWithDI<MyService>(app.Services);
+
+
+//************************************************************************************************
+
+
+
+
+
+
+
+
+
