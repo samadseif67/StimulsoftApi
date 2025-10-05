@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+  <CodeSnippet Format="1.0.0">
+    <Header>
+      <Title>MVC Action with HttpGet</Title>
+      <Shortcut>action</Shortcut>
+      <Description>Creates an HttpGet action returning IActionResult</Description>
+      <Author>Your Name</Author>
+    </Header>
+    <Snippet>
+      <Declarations>
+        <Literal>
+          <ID>ActionName</ID>
+          <ToolTip>Name of the action method</ToolTip>
+          <Default>Index</Default>
+        </Literal>
+      </Declarations>
+      <Code Language="csharp">
+        <![CDATA[[HttpGet]
+public IActionResult $ActionName$()
+{
+    return Ok();
+}$end$]]>
+      </Code>
+    </Snippet>
+  </CodeSnippet>
+</CodeSnippets>
+
+//**********************************************************************
+
+محتوای فایل بالا را با پسوند زیر ذخیره کنید
+AA.snippet 
+و فایل مورد نظر را داخل یک پوشه قراردهید
+
+
+Tools → Code Snippets Manager   --در ویژوال استادیو منوی
+
+زبان را روی سی شارپ تنظیم کنید
+
+
+روی Add... کلیک کنید.
+
+
+
+پوشه‌ای که فایل اسنیپت  را در آن ذخیره کرده‌اید را انتخاب کنید
+
+سپس ok را یزنید
+
+//**********************************************************************
+
+
+
+
+
+

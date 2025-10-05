@@ -1,0 +1,158 @@
+Step 1. Install Autofac NuGet Packages
+Install the necessary Autofac packages using NuGet Package Manager or .NET CLI.
+
+
+dotnet add package Autofac
+dotnet add package Autofac.Extensions.DependencyInjection
+
+
+//*******************************************************************************
+Step 2. Configure Autofac Container
+In the ConfigureServices method of your Startup.cs class, configure Autofac as the DI container.
+
+
+using Autofac;
+using Autofac.Extensions.DependencyInjection;
+
+public class Startup
+{
+    public IContainer ApplicationContainer { get; private set; }
+
+    public Startup(IConfiguration configuration)
+    {
+        Configuration = configuration;
+    }
+
+    public IConfiguration Configuration { get; }
+
+    public IServiceProvider ConfigureServices(IServiceCollection services)
+    {
+        services.AddControllers();
+
+        // Create Autofac container builder
+        var builder = new ContainerBuilder();
+
+        // Register services with Autofac
+        builder.Populate(services);
+
+        // Register your own services with Autofac
+        builder.RegisterType<MyService>().As<IMyService>();
+
+        // Build the Autofac container
+        ApplicationContainer = builder.Build();
+
+        // Create an Autofac service provider
+        return new AutofacServiceProvider(ApplicationContainer);
+    }
+
+    public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+    {
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
+        app.UseRouting();
+
+        app.UseAuthorization();
+
+        app.UseEndpoints(endpoints =>
+        {
+            endpoints.MapControllers();
+        });
+    }
+}
+
+
+//********************************************************************************************************
+
+Step 3. Define Services
+
+Define your services and interfaces.
+
+public interface IMyService
+{
+    void DoSomething();
+}
+
+public class MyService : IMyService
+{
+    public void DoSomething()
+    {
+        // Implementation
+        Console.WriteLine("Executing MyService");
+    }
+}
+
+//*********************************************************************************************************
+
+Step 4. Use Services
+
+Use your services in controllers or other classes.
+
+[ApiController]
+[Route("[controller]")]
+public class MyController : ControllerBase
+{
+    private readonly IMyService _myService;
+
+    public MyController(IMyService myService)
+    {
+        _myService = myService;
+    }
+
+    [HttpGet]
+    public IActionResult Get()
+    {
+        _myService.DoSomething();
+        return Ok();
+    }
+}
+
+//****************************************************************************************************************************************
+5-
+public override IServiceProvider ConfigureServices(IServiceCollection services)
+{
+    // Inject all converteres
+    var containerBuilder = new ContainerBuilder();
+    containerBuilder.Populate(services);
+    containerBuilder.RegisterAssemblyTypes(Assembly.GetAssembly(typeof(Startup)))
+        .Where(x =>
+            !string.IsNullOrWhiteSpace(x.Namespace)
+            && x.IsPublic
+            && x.IsClass
+            && x.GetInterfaces().Any(i =>
+                i.IsGenericType
+                && i.GetGenericTypeDefinition() == typeof(IConverter<,>)))
+        .AsImplementedInterfaces();
+
+    var container = containerBuilder.Build();
+    var sp = new AutofacServiceProvider(container);
+    return sp;
+}
+
+//*********************************************************************************************************************************************
+6-dotnet >6      set in file  program.css
+
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Host
+    .UseServiceProviderFactory(new AutofacServiceProviderFactory())
+    .ConfigureContainer<ContainerBuilder>((container) =>
+    {
+        // container.RegisterType<UserService>().As<IUserService>().InstancePerLifetimeScope();
+        // var assembly= Assembly.Load("AutoFacImpliment");
+        //InstancePerLifetimeScope -- add scoped
+        container.RegisterAssemblyTypes(Assembly.GetAssembly(typeof(Program))).Where(x=>x.Namespace.Contains("AutoFacImpliment.Services")).AsImplementedInterfaces().InstancePerLifetimeScope();
+    });
+
+ 
+builder.Services.AddControllers();
+
+
+
+//*****************************************************************************************************************************************************
+
+
+
