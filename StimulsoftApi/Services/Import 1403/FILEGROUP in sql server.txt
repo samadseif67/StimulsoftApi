@@ -1,0 +1,201 @@
+تعریف فایل گروپ جدید
+
+
+ALTER DATABASE AdventureWorksDW
+ADD FILEGROUP FG_Archive;
+
+//*********************************************************************
+
+پس از ایجاد Filegroup، باید حداقل یک فایل داده به آن اختصاص دهید.
+
+افزودن فایل به فایل گروپ
+
+
+ALTER DATABASE AdventureWorksDW
+ADD FILE
+(
+  NAME = 'ArchiveData1',
+  FILENAME = 'E:\SQLData\ArchiveData1.ndf',
+  SIZE = 1GB,
+  MAXSIZE = 10GB,
+  FILEGROWTH = 100MB
+)
+TO FILEGROUP FG_Archive;
+
+
+//****************************************************************************
+تخصیص اشیاء به Filegroup
+جداول جدید را هنگام ایجاد در Filegroup مشخص کنید
+
+
+
+CREATE TABLE Archive.SalesHistory
+(
+  SaleID int PRIMARY KEY,
+  SaleDate datetime,
+  Amount money
+)
+ON FG_Archive;
+
+
+//*********************************************************************************
+ایندکس‌های سنگین را به Filegroup جداگانه منتقل کنید:
+
+ 
+CREATE INDEX IX_SalesHistory_Date
+  ON Archive.SalesHistory(SaleDate)
+ON FG_Archive;
+
+
+//**********************************************************************************
+
+مانیتورینگ و گزارش‌گیری
+
+برای دریافت وضعیت فایل گروپ ها و فضای اشغال‌شده 
+
+
+SELECT fg.name AS FileGroupName,
+       df.name AS FileName,
+       df.physical_name,
+       df.size/128.0 AS CurrentSizeMB,
+       df.max_size/128.0 AS MaxSizeMB
+FROM sys.filegroups fg
+JOIN sys.database_files df
+  ON fg.data_space_id = df.data_space_id;
+
+
+//*********************************************************************************
+استراتژی‌های بکاپ گیری
+
+Full Backup:شامل همه فایل گروپ ها ها و تراکنش‌های ثبت‌شده
+
+Differential Backup:تغییرات نسبت به آخرین فول بکاپ را ذخیره می‌کند
+
+Filegroup-level Backup:فقط فایل گروپ مشخص را پشتیبان می‌گیرد 
+
+Partial Backup:ترکیبی از Filegroupهای Read-write و Full Filegroupهای Read-only
+
+//**********************************************************************************
+
+مثال Filegroup-level Backup
+
+BACKUP DATABASE AdventureWorksDW
+FILEGROUP = 'FG_Archive'
+TO DISK = 'F:\Backups\AW_Archive.bak'
+WITH FORMAT;
+
+
+
+
+
+
+//**************************************************************************************
+
+تبدیل Filegroup به Read-only
+
+برای داده‌های آرشیوی که دیگر تغییر نمی‌کنند میتوان فایل گروپ در حالت فقط خواندنی قرارداد این کار حجم بکاپ و زمان بازیابی را کاهش میدهد
+
+
+ALTER DATABASE AdventureWorksDW
+MODIFY FILEGROUP FG_Archive READ_ONLY;
+
+
+برای بازگشت به حالت Read-write:
+
+ALTER DATABASE AdventureWorksDW
+MODIFY FILEGROUP FG_Archive READ_WRITE;
+
+//******************************************************************************************
+
+بهترین روش‌ها و نکات کلیدی
+
+فایل‌های پر ترافیک را روی درایوهای SSD جدا قرار دهید
+Growth خودکار (AUTO GROWTH) را با مقادیر منطقی تنظیم و مانیتور کنید.
+
+
+
+//****************************************************************************************
+برای وصل کردن یک جدول به چند تا فایل گروپ 
+باید از پارتیشن کمک بگیریم
+
+-- 1. ایجاد Filegroupها (اگر وجود ندارند)
+ALTER DATABASE YourDB ADD FILEGROUP FG1;
+ALTER DATABASE YourDB ADD FILEGROUP FG2;
+
+-- 2. اضافه کردن فایل به هر Filegroup
+ALTER DATABASE YourDB 
+ADD FILE (NAME = 'FG1_Data', FILENAME = 'C:\Data\FG1.ndf') TO FILEGROUP FG1;
+
+ALTER DATABASE YourDB 
+ADD FILE (NAME = 'FG2_Data', FILENAME = 'C:\Data\FG2.ndf') TO FILEGROUP FG2;
+
+-- 3. ایجاد Partition Function
+CREATE PARTITION FUNCTION PF_Sales (DATE)
+AS RANGE RIGHT FOR VALUES ('2023-01-01', '2024-01-01');
+
+-- 4. ایجاد Partition Scheme و تخصیص Filegroupها
+CREATE PARTITION SCHEME PS_Sales
+AS PARTITION PF_Sales
+TO (FG1, FG2, FG1); -- هر پارتیشن به یک Filegroup
+
+-- 5. ایجاد جدول روی Partition Scheme
+CREATE TABLE Sales (
+    SaleID INT,
+    SaleDate DATE,
+    Amount MONEY
+) ON PS_Sales(SaleDate);
+
+
+//**********************************************************************************************
+در صورتیکه یک جدول وجود دارد و فایل گروپ نشده است
+حال میخواهیم این جدول را به یک فایل گروپ اختصاص بدهیم
+
+1-ایجاد فایل گروپ
+
+ALTER DATABASE YourDB ADD FILEGROUP FG_DATA;
+ALTER DATABASE YourDB 
+ADD FILE (NAME = 'FG_DATA_FILE', FILENAME = 'D:\Data\FG_DATA.ndf', SIZE = 100MB) 
+TO FILEGROUP FG_DATA;
+
+2-این کار داده‌های جدول را به FG_DATA منتقل می‌کند
+درصورتیکه جدول فاقد ایندکس باشد از کد زیر استفاده میکنیم
+
+CREATE CLUSTERED INDEX IX_YourTable_ID 
+ON YourTable (ID) 
+ON FG_DATA;
+
+
+در صورتیکه جدول دارای ایندکس باشد از کد زیر استفاده میکنیم
+CREATE CLUSTERED INDEX IX_YourTable_ID 
+ON YourTable (ID) 
+WITH (DROP_EXISTING = ON) 
+ON FG_DATA;
+
+
+
+//************************************************************************************************
+اگر می‌خواهید جداول آینده به‌طور خودکار در فایل گروپ خاصی ایجاد شوند
+
+ALTER DATABASE YourDB MODIFY FILEGROUP FG_DATA DEFAULT;
+
+
+
+//************************************************************************************************
+مثال طراحی اولیه
+
+-- ایجاد Filegroup برای داده
+ALTER DATABASE MyDB ADD FILEGROUP FG_DATA;
+-- ایجاد Filegroup برای ایندکس
+ALTER DATABASE MyDB ADD FILEGROUP FG_INDEX;
+
+-- اضافه کردن فایل‌ها
+ALTER DATABASE MyDB ADD FILE (NAME='MyDB_Data1', FILENAME='D:\Data\MyDB_Data1.ndf') TO FILEGROUP FG_DATA;
+ALTER DATABASE MyDB ADD FILE (NAME='MyDB_Idx1', FILENAME='E:\Index\MyDB_Idx1.ndf') TO FILEGROUP FG_INDEX;
+
+-- تنظیم FG_DATA به عنوان پیش‌فرض (اختیاری)
+ALTER DATABASE MyDB MODIFY FILEGROUP FG_DATA DEFAULT;
+
+//************************************************************************************************
+
+
+
