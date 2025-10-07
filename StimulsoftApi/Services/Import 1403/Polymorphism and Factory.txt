@@ -1,0 +1,154 @@
+1- تعریف یک Interface (رابط پایه)
+
+public interface IPaymentProcessor
+{
+    Task<bool> ProcessPaymentAsync(decimal amount);
+}
+
+****************************************************************************
+
+2. پیاده‌سازی کلاس‌های مختلف (چندریختی)
+
+
+public class CreditCardPayment : IPaymentProcessor
+{
+    public async Task<bool> ProcessPaymentAsync(decimal amount)
+    {      
+        Console.WriteLine($"Processing ${amount} via Credit Card...");
+        await Task.Delay(100); 
+        return true;
+    }
+}
+
+public class PayPalPayment : IPaymentProcessor
+{
+    public async Task<bool> ProcessPaymentAsync(decimal amount)
+    {       
+        Console.WriteLine($"Processing ${amount} via PayPal...");
+        await Task.Delay(100);
+        return true;
+    }
+}
+
+public class WalletPayment : IPaymentProcessor
+{
+    public async Task<bool> ProcessPaymentAsync(decimal amount)
+    {      
+        Console.WriteLine($"Processing ${amount} via Digital Wallet...");
+        await Task.Delay(100);
+        return true;
+    }
+}
+
+//******************************************************************************************
+
+3- استفاده از Factory Pattern 
+
+
+
+public interface IPaymentProcessorFactory
+{
+    IPaymentProcessor Create(string paymentMethod);
+}
+
+public class PaymentProcessorFactory : IPaymentProcessorFactory
+{
+    private readonly IServiceProvider _serviceProvider;
+
+    public PaymentProcessorFactory(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public IPaymentProcessor Create(string paymentMethod)
+    {
+        return paymentMethod switch
+        {
+            "CreditCard" => _serviceProvider.GetRequiredService<CreditCardPayment>(),
+            "PayPal" => _serviceProvider.GetRequiredService<PayPalPayment>(),
+            "Wallet" => _serviceProvider.GetRequiredService<WalletPayment>(),
+            _ => throw new ArgumentException($"Unknown payment method: {paymentMethod}")
+        };
+    }
+}
+-------------------------------------------------------------------------------------------------------
+4-سرویس‌ها را ثبت کنید
+
+// Program.cs
+builder.Services.AddScoped<CreditCardPayment>();
+builder.Services.AddScoped<PayPalPayment>();
+builder.Services.AddScoped<WalletPayment>();
+builder.Services.AddScoped<IPaymentProcessorFactory, PaymentProcessorFactory>();
+
+
+---------------------------------------------------------------------------------------------------------
+5-در کنترلر از Factory استفاده کنید
+
+
+[ApiController]
+[Route("api/[controller]")]
+public class PaymentController : ControllerBase
+{
+    private readonly IPaymentProcessorFactory _factory;
+
+    public PaymentController(IPaymentProcessorFactory factory)
+    {
+        _factory = factory;
+    }
+
+    [HttpPost("process")]
+    public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequest request)
+    {
+        var processor = _factory.Create(request.Method); // ✅ مقدار از کاربر می‌آید
+        bool success = await processor.ProcessPaymentAsync(request.Amount);
+        return success ? Ok("Payment succeeded") : BadRequest("Payment failed");
+    }
+}
+
+
+public class PaymentRequest
+{
+    public decimal Amount { get; set; }
+    public string Method { get; set; } // "CreditCard", "PayPal", "Wallet"
+}
+//***********************************************************************************************************************************
+//***********************************************************************************************************************************
+
+ استفاده از Keyed Services :
+
+
+builder.Services.AddKeyedScoped<IPaymentProcessor, CreditCardPayment>("CreditCard");
+builder.Services.AddKeyedScoped<IPaymentProcessor, PayPalPayment>("PayPal");
+builder.Services.AddKeyedScoped<IPaymentProcessor, WalletPayment>("Wallet");
+
+
+
+
+
+
+
+[ApiController]
+[Route("api/[controller]")]
+public class PaymentController : ControllerBase
+{
+    private readonly IServiceProvider _serviceProvider;
+
+    public PaymentController(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    [HttpPost("process")]
+    public async Task<IActionResult> ProcessPayment([FromBody] PaymentRequest request)
+    {
+        // ✅ مقدار request.Method از کاربر می‌آید
+        var processor = _serviceProvider.GetRequiredKeyedService<IPaymentProcessor>(request.Method);
+        bool success = await processor.ProcessPaymentAsync(request.Amount);
+        return success ? Ok("Success") : BadRequest("Failed");
+    }
+}
+
+
+
+//*********************************************************************************************************************************
+
