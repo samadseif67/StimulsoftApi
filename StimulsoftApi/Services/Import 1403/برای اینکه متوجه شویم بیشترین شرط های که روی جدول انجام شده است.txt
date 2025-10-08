@@ -1,0 +1,18 @@
+
+برای اینکه متوجه شویم بیشترین شرط های که روی جدول انجام شده است
+
+
+ALTER DATABASE [YourDB] SET QUERY_STORE CLEAR; //برای ریست کردن اطلاعات قبلی
+ALTER DATABASE [YourDB] SET QUERY_STORE = ON;
+
+SELECT
+    q.query_id,
+    qt.query_sql_text,
+    rs.count_executions,
+    rs.avg_duration,
+    rs.avg_logical_io_reads
+FROM sys.query_store_query q
+JOIN sys.query_store_query_text qt ON q.query_text_id = qt.query_text_id
+JOIN sys.query_store_plan p ON q.query_id = p.query_id
+JOIN sys.query_store_runtime_stats rs ON p.plan_id = rs.plan_id
+WHERE qt.query_sql_text LIKE '%Orders%';

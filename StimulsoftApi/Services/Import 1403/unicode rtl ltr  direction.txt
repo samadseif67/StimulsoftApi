@@ -1,0 +1,7 @@
+    unicode-bidi: bidi-override;
+    direction: rtl;
+
+//************************************************
+
+    unicode-bidi: bidi-override;
+    direction: ltr;
