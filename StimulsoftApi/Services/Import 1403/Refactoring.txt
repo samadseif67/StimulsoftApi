@@ -1,0 +1,32 @@
+before refactoring
+
+string A="";
+if(i==1) 
+{
+A="ali1";
+}
+else
+{
+if(i==2)
+{
+A="ali2";
+}
+else
+{
+A="ali3";
+}
+return A;
+}
+
+
+--------------
+next refactoring
+
+string A="";
+if(i==1) return "ali1";
+if(i==2) return "ali2";
+return "ali3";
+
+//**************************************************************************************
+
+
