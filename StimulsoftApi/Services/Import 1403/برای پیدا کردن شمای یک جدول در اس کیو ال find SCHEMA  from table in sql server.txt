@@ -1,0 +1,14 @@
+SELECT TABLE_SCHEMA
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_NAME = 'YourTableName';
+
+
+
+
+//***********************************************
+
+
+SELECT s.name AS SchemaName
+FROM sys.tables t
+JOIN sys.schemas s ON t.schema_id = s.schema_id
+WHERE t.name = 'YourTableName';
