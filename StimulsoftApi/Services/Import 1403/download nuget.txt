@@ -1,0 +1,24 @@
+
+
+در Visual Studio، به مسیر زیر بروید:
+Tools > NuGet Package Manager > Package Manager Settings
+
+روی Package Sources کلیک کنید.
+
+--------------------------------------------------
+یک منبع جدید اضافه کنید
+Name: LocalNuGet
+Source: C:\LocalNuGet
+
+
+---------------------------------------------------
+
+
+dotnet nuget add source C:\LocalNuGet --name LocalNuGet
+
+dotnet restore
+
+
+-------------------------------------------------
+در کنسول (در مسیر پروژه) اجرا کن
+dotnet add package Microsoft.EntityFrameworkCore --source "C:\LocalNugetPackages"

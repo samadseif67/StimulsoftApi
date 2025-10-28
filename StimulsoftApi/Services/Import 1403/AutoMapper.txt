@@ -1,0 +1,63 @@
+
+
+using AutoMapper;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FamilyFile.Application.Mapping
+{
+    public static class MappingAuto<T1, T2>
+    {
+        public static T2 Map(T1 source)
+        {
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<T1, T2>());
+            var mapper = new Mapper(config);
+            return mapper.Map<T2>(source);
+        }
+
+        public static List<T2> MapLst(List<T1> source)
+        {
+            var config = new MapperConfiguration(cfg => cfg.CreateMap<T1, T2>());
+            var mapper = new Mapper(config);
+            return mapper.Map<List<T2>>(source);
+        }
+
+    }
+}
+ 
+
+//*********************************************************
+
+
+using AutoMapper;
+namespace AutoMapperDemo
+{
+    public class MapperConfig
+    {
+        public static Mapper InitializeAutomapper()
+        {    
+            var config = new MapperConfiguration(cfg =>
+                {                     
+                    cfg.CreateMap<Employee, EmployeeDTO>();                     
+                });          
+            var mapper = new Mapper(config);
+            return mapper;
+        }
+    }
+}
+
+ Employee emp = new Employee
+            {
+                Name = "James",
+                Salary = 20000,
+                Address = "London",
+                Department = "IT"
+            };
+
+
+
+ var mapper = MapperConfig.InitializeAutomapper();
+ var empDTO1 = mapper.Map<EmployeeDTO>(emp);

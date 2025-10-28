@@ -1,0 +1,11 @@
+/Application
+  └── Features
+      └── Personnel
+          ├── Commands
+          │   └── CreatePersonnel
+          │       ├── CreatePersonnelCommand.cs
+          │       └── CreatePersonnelHandler.cs
+          └── Queries
+              └── GetPersonnelList
+                  ├── GetPersonnelListQuery.cs
+                  └── GetPersonnelListHandler.cs

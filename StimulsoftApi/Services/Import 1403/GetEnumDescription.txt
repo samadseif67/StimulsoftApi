@@ -1,0 +1,43 @@
+using System.ComponentModel;
+using System.Reflection;
+
+public static class EnumExtensions
+{
+    public static string GetDescription(this Enum value)
+    {
+        var field = value.GetType().GetField(value.ToString());
+        if (field == null) return value.ToString();
+
+        var attribute = field.GetCustomAttribute<DescriptionAttribute>();
+        return attribute?.Description ?? value.ToString();
+    }
+}
+
+
+
+
+using System.ComponentModel;
+
+public enum OrderStatus
+{
+    [Description("در انتظار")]
+    Pending,
+
+    [Description("تأیید شده")]
+    Confirmed,
+
+    [Description("ارسال شده")]
+    Shipped,
+
+    [Description("لغو شده")]
+    Cancelled
+}
+
+
+
+
+
+var status = OrderStatus.Pending;
+string description = status.GetDescription(); // خروجی: "در انتظار"
+
+Console.WriteLine(description);

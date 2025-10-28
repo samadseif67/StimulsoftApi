@@ -1,0 +1,48 @@
+
+using ReffelectionApp;
+
+Console.WriteLine("-------------------------GetConstructors----------------------------------------");
+
+var constructors = typeof(Person).GetConstructors();
+foreach (var constructor in constructors)
+{
+
+    Console.WriteLine($"constructorName={constructor.Name}");
+    var parameters = constructor.GetParameters();
+    foreach (var parameter in parameters)
+    {
+        var parameterType = parameter.ParameterType;
+        var parameterName = parameter.Name;
+        Console.WriteLine($"parameterType:{parameterType} parameterName:{parameterName}");
+    }
+}
+
+Console.WriteLine("-------------------------GetProperties----------------------------------------");
+
+var properties = typeof(Person).GetProperties();
+foreach (var propertie in properties)
+{
+    var propertieName = propertie.Name;
+    var propertyType = propertie.PropertyType;
+    var propertyValue = propertie.GetValue(new Person(10, 20));
+    Console.WriteLine($"propertyType={propertyType} propertieName={propertieName} propertyValue={propertyValue}");
+}
+
+Console.WriteLine("------------------------GetMethods-----------------------------------------");
+
+var methods = typeof(Person).GetMethods();
+foreach (var method in methods)
+{
+    var methodName = method.Name;
+    var methodReturnType = method.ReturnType;
+    Console.WriteLine($"methodReturnType={methodReturnType} methodName={methodName}");
+    var parameters = method.GetParameters();
+    foreach (var parameter in parameters)
+    {
+        var parameterName = parameter.Name;
+        var parameterDefaultValue = parameter.DefaultValue;
+        var parameterType= parameter.ParameterType;
+        Console.WriteLine($"parameterName={parameterName} parameterDefaultValue={parameterDefaultValue} parameterType={parameterType}");
+    }
+}
+

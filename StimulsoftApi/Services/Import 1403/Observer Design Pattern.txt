@@ -1,0 +1,117 @@
+using System;
+
+namespace App_Observable.Services
+{
+
+    public interface IObserver
+    {
+        void Update(string message);
+    }
+
+    public interface IObservable
+    {
+        void RegisterObserver(IObserver observer);
+        void RemoveObserver(IObserver observer);
+        void NotifyObservers(string message);
+    }
+
+
+    //----------------------------------------------------------------------------------------
+
+    public class OrderService : IObservable
+    {
+        public readonly List<IObserver> _Observers=new ();
+        private readonly IServiceProvider _serviceProvider;
+        public OrderService(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
+        public void RegisterObserver(IObserver observer)
+        {
+            _Observers.Add(observer);
+        }
+
+        public void RemoveObserver(IObserver observer)
+        {
+            _Observers.Remove(observer);    
+        }
+
+        public void NotifyObservers(string message)
+        {            
+            IEnumerable<IObserver> Observers1 = _serviceProvider.GetServices<IObserver>();             
+            foreach (var observer in Observers1)
+            {
+                observer.Update(message);
+            }
+        }
+
+        public void CreateOrder(string orderId)
+        {
+            // منطق ایجاد سفارش
+            Console.WriteLine($"Order {orderId} created.");
+            // اطلاع‌رسانی به همه Observerها
+            NotifyObservers($"New order created: {orderId}");
+        }
+    }
+     
+    //-----------------------------------------------------------------------------------------
+
+
+    public class EmailObserver : IObserver
+    {
+        public void Update(string message)
+        {
+            Console.WriteLine("EmailObserver=" + message);
+        }
+    }
+    public class LogObserver : IObserver
+    {
+        public void Update(string message)
+        {
+            Console.WriteLine("LogObserver=" + message);
+        }
+    }
+    public class NotificationObserver : IObserver
+    {
+        public void Update(string message)
+        {
+            Console.WriteLine("NotificationObserver=" + message);
+        }
+    }
+
+
+
+
+}
+//*******************************************************************************************************************************
+نحوه استفاده
+
+using App_Observable.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace App_Observable.Controllers
+{
+    [Route("api/[controller]/[action]")]
+    [ApiController]
+    public class OrderController : ControllerBase
+    {
+        private readonly OrderService _orderService;
+        public OrderController(OrderService orderService)
+        {
+            _orderService = orderService;
+        }
+
+        [HttpPost]
+        public ActionResult CreateOrder(string OrderId)
+        {
+            _orderService.CreateOrder(OrderId);
+            return Ok();
+        }
+         
+
+    }
+}
+
+
+

@@ -1,0 +1,42 @@
+مرحله ۱: ذخیره IServiceProvider در یک کلاس استاتیک
+
+
+public static class ServiceHelper
+{
+    public static IServiceProvider ServiceProvider { get; set; }
+}
+
+-------------------------------------------------------------------
+ 
+مرحله ۲: تنظیم آن در Program.cs
+
+var builder = WebApplication.CreateBuilder(args);
+// ... سایر سرویس‌ها
+
+var app = builder.Build();
+
+// بعد از ساخت app، اما قبل از Run()
+ServiceHelper.ServiceProvider = app.Services;
+
+app.Run();
+
+-------------------------------------------------------------------
+
+
+مرحله ۳: استفاده در کلاس استاتیک
+
+
+
+public static class MyStaticClass
+{
+    public static void DoWork()
+    {
+        using var scope = ServiceHelper.ServiceProvider.CreateScope();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<MyStaticClass>>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<MyDbContext>();
+
+        logger.LogInformation("Work done!");
+    }
+}
+
+--------------------------------------------------------------------
