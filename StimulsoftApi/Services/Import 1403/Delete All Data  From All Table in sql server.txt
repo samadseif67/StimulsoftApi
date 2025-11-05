@@ -1,0 +1,25 @@
+/* 1. غیرفعال کردن تمام کلیدهای خارجی */
+DECLARE @DisableConstraints NVARCHAR(MAX) = N'';
+SELECT @DisableConstraints += N'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) + ' NOCHECK CONSTRAINT ALL;' 
+FROM sys.tables;
+EXEC sp_executesql @DisableConstraints;
+
+/* 2. حذف داده‌ها از تمام جدول‌های کاربری */
+DECLARE @DeleteData NVARCHAR(MAX) = N'';
+SELECT @DeleteData += N'DELETE FROM ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) + ';' 
+FROM sys.tables
+WHERE is_ms_shipped = 0; -- حذف فقط جدول‌های کاربری (غیر سیستمی)
+EXEC sp_executesql @DeleteData;
+
+/* 3. بازنشانی ستون‌های Identity (اختیاری) */
+DECLARE @ResetIdentities NVARCHAR(MAX) = N'';
+SELECT @ResetIdentities += N'DBCC CHECKIDENT (''' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) + ''', RESEED, 0);' 
+FROM sys.tables
+WHERE is_ms_shipped = 0 AND OBJECTPROPERTY(object_id, 'TableHasIdentity') = 1;
+EXEC sp_executesql @ResetIdentities;
+
+/* 4. فعال‌سازی مجدد تمام کلیدهای خارجی */
+DECLARE @EnableConstraints NVARCHAR(MAX) = N'';
+SELECT @EnableConstraints += N'ALTER TABLE ' + QUOTENAME(SCHEMA_NAME(schema_id)) + '.' + QUOTENAME(name) + ' WITH CHECK CHECK CONSTRAINT ALL;' 
+FROM sys.tables;
+EXEC sp_executesql @EnableConstraints;

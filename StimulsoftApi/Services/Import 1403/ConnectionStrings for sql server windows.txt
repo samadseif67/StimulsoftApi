@@ -1,0 +1,21 @@
+
+login without user and pass and login windows
+
+"ConnectionStrings": {
+"FamilyFileConnectionStrings": "Server=DESKTOP-4V80UTH\\SQLSERVER2022;Database=FamilyFileDB;
+Integrated Security=True;MultipleActiveResultSets=True;
+TrustServerCertificate=True;"
+}
+
+
+
+login with user and pass
+
+ "ConnectionStrings": {
+   "FamilyFileConnectionStrings": "data source=DESKTOP-4V80UTH\\SQLSERVER2022;
+initial catalog=FamilyFileDB;
+persist security info=True;
+user id=sa;
+password=Aa@123456;
+MultipleActiveResultSets=True;TrustServerCertificate=True;"
+ }
