@@ -1,0 +1,91 @@
+برای اضافه کردن رفتار جدید به یک شیء، بدون تغییر کد کلاس اصلی استفاده می‌شود.
+
+
+ساختار کلی Decorator
+
+فرض کنید یک سرویس دارید
+
+
+public interface IMessageService
+{
+    void Send(string message);
+}
+
+public class MessageService : IMessageService
+{
+    public void Send(string message)
+    {
+        Console.WriteLine("Sending message: " + message);
+    }
+}
+
+
+--------------------------------------------------------------------------
+حال می‌خواهیم قبل از ارسال پیام، لاگ بنویسیم بدون تغییر در MessageService.
+
+ایجاد Decorator
+
+public class LoggingMessageServiceDecorator : IMessageService
+{
+    private readonly IMessageService _inner;
+
+    public LoggingMessageServiceServiceDecorator(IMessageService inner)
+    {
+        _inner = inner;
+    }
+
+    public void Send(string message)
+    {
+        Console.WriteLine("Log: Sending message...");
+        _inner.Send(message);  // اجرای سرویس اصلی
+    }
+}
+
+------------------------------------------------------------------------
+
+استفاده از Decorator در ASP.NET Core DI
+
+services.AddScoped<IMessageService, MessageService>();
+services.Decorate<IMessageService, LoggingMessageServiceDecorator>();
+
+------------------------------------------------------------------------
+برای استفاده از Decorate باید پکیج Scrutor را نصب کنید
+
+
+dotnet add package Scrutor
+
+
+------------------------------------------------------------------------
+
+کجا از Decorator در ASP.NET Core استفاده می‌کنیم؟
+
+
+1. لاگ‌برداری (Logging)	قبل/بعد اجرای سرویس، لاگ برای دیباگ یا مانیتورینگ
+2. کش کردن (Caching)	قبل از اجرای سرویس چک کنیم آیا داده در Cache هست یا خیر
+3. اعتبارسنجی (Validation)	اعتبارسنجی ورودی‌ها قبل از اجرای سرویس اصلی
+4. افزودن Retry/Policy	اضافه کردن Retry یا Circuit Breaker بدون استفاده از Polly
+5. امنیت و Authorization	چک کردن اجازه سطح دسترسی قبل از اجرای سرویس
+6. Auditing	ثبت تاریخچه کاربر (Audit Log)
+7. Performance Monitoring	سنجش زمان اجرای یک سرویس با Stopwatch
+
+
+--------------------------------------------------------------
+
+اگر Decorator مربوط به رفتارهای UseCase باشد → Application
+اگر Decorator مرتبط با تکنولوژی باشد → Infrastructure
+
+
+-------------------------------------------------------------
+نوع Decorator	لایه مناسب	دلیل
+Validation	Application	مربوط به UseCase است
+Authorization	Application	Business Rule است
+Logging برای UseCase	Application	رفتار منطقی
+Caching	Infrastructure	وابسته به تکنولوژی
+Logging با Serilog	Infrastructure	مربوط به ابزار بیرونی
+Retry / Circuit Breaker	Infrastructure	استفاده از Polly و HttpClient
+Decorator برای Repository	Infrastructure	وابستگی به دیتابیس/کش
+
+
+
+
+

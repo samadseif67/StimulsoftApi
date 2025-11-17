@@ -1,0 +1,232 @@
+1. کاربر (User)
+
+2. دوره (Course)
+هر دوره شامل درس‌ها، آزمون‌ها، و تکالیف است. مدرس مسئول مدیریت محتوای آن است.
+
+3. درس (Lesson)
+واحد پایه‌ای یادگیری. هر درس می‌تواند یک آزمون یا تکلیف داشته باشد.
+
+4. آزمون (Quiz)
+هر آزمون شامل چند سوال است. نمره دانشجو در Progress ذخیره می‌شود.
+
+5. تکلیف (Assignment)
+دانشجویان ارسال‌ها (Submission) ایجاد می‌کنند که توسط مدرس نمره‌دهی می‌شود.
+
+6. ثبت‌نام (Enrollment)
+ارتباط بین دانشجو و دوره را مدیریت می‌کند. تراکنش‌های مالی نیز به این موجودیت مرتبط هستند.
+
+7. گواهینامه (Certificate)
+پس از تکمیل دوره، به دانشجو صادر می‌شود.
+
+8. پرداخت (Payment)
+برای دوره‌های غیررایگان ضروری است.
+
+9. انجمن (Forum)
+هر دوره یک انجمن برای بحث دارد. کاربران موضوعات (Thread) و پست‌ها (Post) ایجاد می‌کنند.
+
+//-----------------------------------------------------------------------------------------
+
+using System;
+using System.Collections.Generic;
+
+public enum UserRole { Student, Instructor, Admin }
+public enum CourseStatus { Draft, Published }
+public enum EnrollmentStatus { Active, Completed, Cancelled }
+public enum ContentTypes { Video, Text, PDF, Interactive }
+public enum PaymentStatus { Success, Failed, Pending }
+
+// موجودیت کاربر
+public class User
+{
+    public int UserId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
+    public UserRole Role { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? LastLogin { get; set; }
+    public string Bio { get; set; } = string.Empty;
+    public string ProfilePicture { get; set; } = string.Empty;
+
+    // رابطه‌ها
+    public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>(); // به عنوان دانشجو
+    public virtual ICollection<Course> Courses { get; set; } = new List<Course>(); // به عنوان مدرس
+    public virtual ICollection<AssignmentSubmission> Submissions { get; set; } = new List<AssignmentSubmission>(); // تکالیف ارسالی
+}
+
+// موجودیت دوره
+public class Course
+{
+    public int CourseId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int CategoryId { get; set; } // می‌تواند به جدول جداگانه دسته‌بندی اشاره کند
+    public int InstructorId { get; set; }
+    public decimal Price { get; set; }
+    public int Duration { get; set; } // به ساعت
+    public string Level { get; set; } = "Beginner"; // یا از Enum استفاده شود
+    public CourseStatus Status { get; set; }
+
+    // رابطه‌ها
+    public virtual User Instructor { get; set; } = null!;
+    public virtual ICollection<Lesson> Lessons { get; set; } = new List<Lesson>();
+    public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
+    public virtual Forum Forum { get; set; } = null!; // یک انجمن برای هر دوره
+}
+
+// موجودیت درس
+public class Lesson
+{
+    public int LessonId { get; set; }
+    public int CourseId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public ContentTypes ContentType { get; set; }
+    public string ContentUrl { get; set; } = string.Empty;
+    public int OrderNumber { get; set; } // ترتیب نمایش در دوره
+
+    // رابطه‌ها
+    public virtual Course Course { get; set; } = null!;
+    public virtual Quiz? Quiz { get; set; } // هر درس می‌تواند یک آزمون داشته باشد
+}
+
+// موجودیت آزمون
+public class Quiz
+{
+    public int QuizId { get; set; }
+    public int LessonId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public int TimeLimit { get; set; } // به دقیقه
+    public int PassingScore { get; set; } // حداقل نمره قبولی (مثلاً 70%)
+
+    // رابطه‌ها
+    public virtual Lesson Lesson { get; set; } = null!;
+    public virtual ICollection<QuizQuestion> Questions { get; set; } = new List<QuizQuestion>();
+}
+
+// موجودیت سوال آزمون (موجودیت اضافه برای کامل‌بودن مدل)
+public class QuizQuestion
+{
+    public int QuestionId { get; set; }
+    public int QuizId { get; set; }
+    public string QuestionText { get; set; } = string.Empty;
+    public string Options { get; set; } = string.Empty; // JSON: ["گزینه1", "گزینه2", ...]
+    public string CorrectAnswer { get; set; } = string.Empty;
+
+    public virtual Quiz Quiz { get; set; } = null!;
+}
+
+// موجودیت تکلیف
+public class Assignment
+{
+    public int AssignmentId { get; set; }
+    public int CourseId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public DateTime DueDate { get; set; }
+    public int MaxScore { get; set; }
+    public bool FileUploadRequired { get; set; }
+
+    // رابطه‌ها
+    public virtual Course Course { get; set; } = null!;
+    public virtual ICollection<AssignmentSubmission> Submissions { get; set; } = new List<AssignmentSubmission>();
+}
+
+// موجودیت ارسال تکلیف (موجودیت اضافه برای کامل‌بودن مدل)
+public class AssignmentSubmission
+{
+    public int SubmissionId { get; set; }
+    public int AssignmentId { get; set; }
+    public int StudentId { get; set; }
+    public string? FileUrl { get; set; } // لینک فایل آپلود شده
+    public string? AnswerText { get; set; } // پاسخ متنی
+    public DateTime SubmissionDate { get; set; } = DateTime.UtcNow;
+    public int? Score { get; set; } // نمره داده شده توسط مدرس
+    public string? Feedback { get; set; } // بازخورد مدرس
+
+    public virtual Assignment Assignment { get; set; } = null!;
+    public virtual User Student { get; set; } = null!;
+}
+
+// موجودیت ثبت‌نام
+public class Enrollment
+{
+    public int EnrollmentId { get; set; }
+    public int UserId { get; set; }
+    public int CourseId { get; set; }
+    public DateTime EnrollmentDate { get; set; } = DateTime.UtcNow;
+    public EnrollmentStatus Status { get; set; }
+    public int ProgressPercentage { get; set; }
+
+    // رابطه‌ها
+    public virtual User User { get; set; } = null!;
+    public virtual Course Course { get; set; } = null!;
+    public virtual Certificate? Certificate { get; set; } // گواهینامه پس از تکمیل دوره
+    public virtual Payment? Payment { get; set; } // پرداخت مرتبط
+}
+
+// موجودیت گواهینامه
+public class Certificate
+{
+    public int CertificateId { get; set; }
+    public int EnrollmentId { get; set; }
+    public DateTime IssueDate { get; set; } = DateTime.UtcNow;
+    public string CertificateUrl { get; set; } = string.Empty;
+    public string VerificationCode { get; set; } = Guid.NewGuid().ToString(); // کد یکتا
+
+    public virtual Enrollment Enrollment { get; set; } = null!;
+}
+
+// موجودیت پرداخت
+public class Payment
+{
+    public int PaymentId { get; set; }
+    public int EnrollmentId { get; set; }
+    public decimal Amount { get; set; }
+    public string PaymentMethod { get; set; } = string.Empty; // کارت، پی‌پال و...
+    public string TransactionId { get; set; } = string.Empty; // شناسه تراکنش بانکی
+    public PaymentStatus Status { get; set; }
+    public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
+
+    public virtual Enrollment Enrollment { get; set; } = null!;
+}
+
+// موجودیت انجمن
+public class Forum
+{
+    public int ForumId { get; set; }
+    public int CourseId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+
+    // رابطه‌ها
+    public virtual Course Course { get; set; } = null!;
+    public virtual ICollection<DiscussionThread> Threads { get; set; } = new List<DiscussionThread>(); // موضوعات انجمن
+}
+
+// موجودیت موضوع بحث (موجودیت اضافه برای کامل‌بودن مدل)
+public class DiscussionThread
+{
+    public int ThreadId { get; set; }
+    public int ForumId { get; set; }
+    public int UserId { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public bool IsPinned { get; set; } // سؤالات مهم تثبیت شوند
+
+    public virtual Forum Forum { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
+    public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
+}
+
+// موجودیت پست (موجودیت اضافه برای کامل‌بودن مدل)
+public class Post
+{
+    public int PostId { get; set; }
+    public int ThreadId { get; set; }
+    public int UserId { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public DateTime PostedAt { get; set; } = DateTime.UtcNow;
+
+    public virtual DiscussionThread Thread { get; set; } = null!;
+    public virtual User User { get; set; } = null!;
+}

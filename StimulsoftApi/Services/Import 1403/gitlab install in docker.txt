@@ -1,0 +1,84 @@
+ایجاد فایل docker-compose.yml
+
+----------------------------------------------------------
+
+version: "3"
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: always
+    hostname: "localhost"
+    ports:
+      - "8020:80"
+      - "1443:443"
+      - "2222:22"
+    volumes:
+      - ./config:/etc/gitlab
+      - ./logs:/var/log/gitlab
+      - ./data:/var/opt/gitlab
+
+
+
+
+-----------------------------------------------
+docker compose up -d
+
+
+------------------------------------------------
+docker ps
+
+
+------------------------------------------------
+
+https://localhost:8020
+http://localhost:8020/users/sign_in
+
+-------------------------------------------------
+
+user name:root
+
+رمز عبور اولیه در فایل داخل کانتینر ذخیره می‌شود
+
+docker exec -it gitlab grep 'Password:' /etc/gitlab/initial_root_password
+
+یا 
+
+docker exec -it gitlab cat /etc/gitlab/initial_root_password
+
+ 
+
+
+ ----------------------------------------------------
+
+docker logs -f gitlab
+
+
+----------------------------------------------------
+
+وقتی پیام gitlab Reconfigured! را دیدید، نصب کامل شده است.
+
+
+---------------------------------------------------
+
+   
+version: "3"
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    restart: always
+    hostname: "localhost"
+    ports:
+      - "8020:80"
+      - "1443:443"
+      - "2222:22"
+    volumes:
+      - ./config:/etc/gitlab
+      - ./logs:/var/log/gitlab
+      - ./data:/var/opt/gitlab
+
+
+

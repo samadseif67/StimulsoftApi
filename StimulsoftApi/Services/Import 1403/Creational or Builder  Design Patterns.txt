@@ -1,0 +1,94 @@
+ برای ساخت اشیای پیچیده یا اشیایی با تعداد زیادی پارامتر اختیاری استفاده می‌شود. هدف اصلی این الگو، جدا کردن ساخت یک شیء از نمایش آن است تا بتوانیم همان شیء را با پیکربندی‌های مختلف و بدون ایجاد کد تکراری یا نامرتب بسازیم.
+
+چرا از الگوی Builder استفاده می‌کنیم؟
+
+۱. کاهش پیچیدگی سازنده‌ها
+
+وقتی یک کلاس دارای تعداد زیادی فیلد (مثلاً ۱۰ فیلد) باشد و برخی از آن‌ها اختیاری باشند، استفاده از سازنده با همه پارامترها ناامن و غیرخوانا خواهد بود.
+
+
+۲. امکان ساخت اشیاء به صورت گام‌به‌گام
+
+مرحله‌به‌مرحله یک شیء را بسازیم بدون اینکه مجبور باشیم همه مقادیر را در یک لحظه مشخص کنیم
+
+
+۳. کد خوانا و انعطاف‌پذیر
+کد شما شبیه به جملات انگلیسی می‌شود و خواندن و نگهداری آن آسان‌تر می‌شود.
+
+
+۴. امکان اعتبارسنجی در آخرین مرحله
+
+ساخت اشیای پیچیده در دامنه‌های کسب‌وکار 
+
+
+مثلاً در یک سیستم سفارش آنلاین، ساخت یک شیء  که شامل آدرس، لیست محصولات، کوپن تخفیف، روش پرداخت، مالیات و … است.
+Order order = new Order("Ali", "Tehran", "12345", null, products, null, PaymentMethod.CARD, false);
+(کدام null مربوط به چیست؟ نامفهوم!)
+
+
+
+Order order = Order.builder()
+    .customerName("Ali")
+    .city("Tehran")
+    .postalCode("12345")
+    .products(products)
+    .paymentMethod(PaymentMethod.CARD)
+    .build();
+
+
+
+------------------------------------
+public class Person {
+    private final String name;
+    private final int age;
+    private final String email;
+
+    private Person(Builder builder) {
+        this.name = builder.name;
+        this.age = builder.age;
+        this.email = builder.email;
+    }
+
+    public static class Builder {
+        private String name;
+        private int age;
+        private String email;
+
+        public Builder setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder setAge(int age) {
+            this.age = age;
+            return this;
+        }
+
+        public Builder setEmail(String email) {
+            this.email = email;
+            return this;
+        }
+
+        public Person build() {
+            // مثلاً اعتبارسنجی:
+            if (name == null) throw new IllegalStateException("Name is required");
+            return new Person(this);
+        }
+    }
+}
+
+// استفاده:
+Person person = new Person.Builder()
+    .setName("Ali")
+    .setAge(30)
+    .setEmail("ali@example.com")
+    .build();
+
+--------------------------------------------------------------------------------------
+الگوی Builder وقتی مفید است که:
+
+کلاس شما تعداد زیادی فیلد دارد (به‌ویژه فیلدهای اختیاری).
+می‌خواهید ساخت شیء خوانا، انعطاف‌پذیر و ایمن باشد.
+نیاز دارید از یک فرآیند ساخت گام‌به‌گام استفاده کنید.
+
+---------------------------------------------------------------------------------------

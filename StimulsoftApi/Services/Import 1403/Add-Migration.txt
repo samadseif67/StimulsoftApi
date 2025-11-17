@@ -1,0 +1,10 @@
+Add-Migration InitialCreate `
+-Project DataProject `          # پروژه‌ای که DbContext و مایگریشن‌ها در آن ذخیره می‌شوند
+-StartupProject WebProject `    # پروژه اجرایی (برای دسترسی به ConnectionString و Services)
+-Context AppDbContext           # نام کلاس DbContext (اگر چندین DbContext دارید)
+
+
+
+
+
+Add-Migration MigrationName -Verbose    برای مشاهده لاگ ها و مشاهده خطا ها 
