@@ -1,0 +1,319 @@
+۱. ساخت Hub در ASP.NET Core
+
+
+using Microsoft.AspNetCore.SignalR;
+
+public class ChatHub : Hub
+{
+    public async Task SendMessage(string user, string message)
+    {
+        await Clients.All.SendAsync("ReceiveMessage", user, message);
+    }
+}
+
+
+-------------------------------------------------------------------------------------------
+توضیح دستورات مهم در Hub
+
+دستور	توضیح
+Clients.All	ارسال پیام به همه کلاینت‌ها
+Clients.Caller	ارسال پیام فقط به کلاینت ارسال‌کننده
+Clients.Others	ارسال پیام به بقیه کلاینت‌ها به جز فرستنده
+Clients.Client(connectionId)	ارسال پیام به یک کلاینت خاص
+Clients.Group("groupName")	ارسال پیام به اعضای یک گروه خاص
+SendAsync("method", data)	فراخوانی یک متد در سمت کلاینت
+
+
+--------------------------------------------------------------------------------------------
+۲. ثبت SignalR در Program.cs
+
+builder.Services.AddSignalR();
+app.MapHub<ChatHub>("/chatHub");
+
+
+-------------------------------------------------------------------------------------------
+
+۳. استفاده در کلاینت (JavaScript)
+
+اتصال به Hub
+
+const connection = new signalR.HubConnectionBuilder()
+    .withUrl("/chatHub")
+    .build();
+
+
+
+---------------------------------------------------------------------------------------------
+
+دریافت پیام از سرور
+
+connection.on("ReceiveMessage", function (user, message) {
+    console.log(user + ": " + message);
+});
+
+----------------------------------------------------------------------------------------------
+
+شروع اتصال
+
+connection.start().catch(err => console.error(err));
+
+
+------------------------------------------------------------------------------------------------
+
+ارسال پیام به سرور
+
+
+connection.invoke("SendMessage", "Ali", "سلام")
+    .catch(err => console.error(err));
+
+-------------------------------------------------------------------------------------------------
+۴. دستورات مهم در سمت کلاینت (JavaScript)
+
+
+connection.start()	شروع اتصال به سیگنال‌آر
+connection.stop()	قطع اتصال
+connection.on("MethodName", callback)	دریافت پیام/فراخوانی متد از سرور
+connection.invoke("MethodName", params)	ارسال پیام/فراخوانی متد سرور
+connection.off("MethodName")	حذف لیسنر یک متد
+withUrl("/hub")	تعیین آدرس هاب
+HubConnectionBuilder()	ساخت شیٔ اتصال
+
+
+-------------------------------------------------------------------------------------------------
+۵. ارسال پیام به گروه‌ها
+
+در Hub:
+
+public async Task JoinGroup(string group)
+{
+    await Groups.AddToGroupAsync(Context.ConnectionId, group);
+}
+
+public async Task SendToGroup(string group, string message)
+{
+    await Clients.Group(group).SendAsync("ReceiveMessage", message);
+}
+
+
+
+در JavaScript:
+
+
+connection.invoke("JoinGroup", "Room1");
+connection.invoke("SendToGroup", "Room1", "Hello Group");
+
+
+----------------------------------------------------------------------------------------------------
+۶. تشخیص اتصال و قطع اتصال
+
+public override async Task OnConnectedAsync()
+{
+    await Clients.All.SendAsync("UserConnected", Context.ConnectionId);
+    await base.OnConnectedAsync();
+}
+
+public override async Task OnDisconnectedAsync(Exception? ex)
+{
+    await Clients.All.SendAsync("UserDisconnected", Context.ConnectionId);
+    await base.OnDisconnectedAsync(ex);
+}
+
+
+********************************************************************************************************************
+
+در صورتیکه بخواهیم ارتباط بین دو تا پروژه 
+asp core 
+ارتباط برقرار کنیم
+
+
+۱. پیاده‌سازی پروژه اول (SignalR Hub Server)
+
+public class ChatHub : Hub
+{
+    public async Task Broadcast(string message)
+    {
+        await Clients.All.SendAsync("ReceiveMessage", message);
+    }
+}
+
+
+
+Program.cs
+app.MapHub<ChatHub>("/chatHub");
+
+------------------------------------------------------------------------------------------------------------------
+
+۲. پیاده‌سازی پروژه دوم (API دیگر که پیام می‌فرستد)
+
+یک SignalR Client باشد
+✔ به پروژه اول وصل شود
+✔ پیام ارسال کند مانند یک کلاینت
+
+
+اضافه کردن پکیج
+
+dotnet add package Microsoft.AspNetCore.SignalR.Client
+
+
+
+ساخت یک SignalR Client در پروژه دوم
+
+
+Service در پروژه دوم:
+
+
+using Microsoft.AspNetCore.SignalR.Client;
+
+public class HubClientService
+{
+    private readonly HubConnection _connection;
+
+    public HubClientService()
+    {
+        _connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:5001/chatHub")
+            .WithAutomaticReconnect()
+            .Build();
+    }
+
+    public async Task StartAsync()
+    {
+        await _connection.StartAsync();
+    }
+
+    public async Task SendMessageToHub(string message)
+    {
+        // متد داخل Hub را invoke می‌کند
+        await _connection.InvokeAsync("Broadcast", message);
+    }
+}
+
+
+
+راه‌اندازی در Program.cs
+
+
+builder.Services.AddSingleton<HubClientService>();
+
+var app = builder.Build();
+
+var hubClient = app.Services.GetRequiredService<HubClientService>();
+await hubClient.StartAsync();
+
+app.Run();
+
+----------------------------------------------------
+
+استفاده در Controller پروژه دوم
+
+
+[ApiController]
+[Route("api/send")]
+public class SendController : ControllerBase
+{
+    private readonly HubClientService _hubClient;
+
+    public SendController(HubClientService hubClient)
+    {
+        _hubClient = hubClient;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Send([FromBody] string message)
+    {
+        await _hubClient.SendMessageToHub(message);
+        return Ok("Sent to Hub!");
+    }
+}
+
+
+
+
+--------------------------------------------------
+اگر نیاز داری "دریافت پیام از Hub در پروژه دوم" هم انجام شود
+
+
+_connection.On<string>("ReceiveMessage", msg => {
+    Console.WriteLine("Received from Hub: " + msg);
+});
+
+
+--------------------------------------------------------
+
+
+*******************************************************************************************
+مثال نگهداری کاربران آنلاین
+
+public static List<string> OnlineUsers = new List<string>();
+
+public override Task OnConnectedAsync()
+{
+    OnlineUsers.Add(Context.ConnectionId);
+    return base.OnConnectedAsync();
+}
+
+public override Task OnDisconnectedAsync(Exception? ex)
+{
+    OnlineUsers.Remove(Context.ConnectionId);
+    return base.OnDisconnectedAsync(ex);
+}
+
+
+---------------------------------------------------
+ارسال پیام به User با UserId
+
+اگر کاربران Login شده باشند، شما باید پیام را به UserId بفرستید،
+نه ConnectionId که موقت است.
+
+
+await Clients.User(userId).SendAsync("ReceiveMessage", data);
+
+
+
+------------------------------------------
+
+Groups (گروه‌بندی کاربران)
+
+
+اضافه به گروه
+await Groups.AddToGroupAsync(Context.ConnectionId, "Admins");
+
+
+-----------------------------------------
+ارسال به گروه:
+
+await Clients.Group("Admins").SendAsync("ReceiveMessage", msg);
+
+
+***************************************************************************************************
+
+. استفاده از Token / JWT برای احراز هویت SignalR
+
+
+
+new signalR.HubConnectionBuilder()
+  .withUrl("/chatHub", {
+     accessTokenFactory: () => localStorage.getItem("token")
+  })
+  .build();
+
+
+
+builder.Services.AddAuthentication(...)
+
+
+***********************************************************************************************
+اتصال مجدد خودکار
+
+new signalR.HubConnectionBuilder()
+   .withAutomaticReconnect()
+   .build();
+
+
+
+
+
+
+
+
+

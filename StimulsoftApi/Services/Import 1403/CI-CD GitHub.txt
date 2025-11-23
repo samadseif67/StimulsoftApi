@@ -1,0 +1,129 @@
+# نام Workflow
+name: ASP.NET Core CI/CD
+
+# شرایط اجرای Workflow
+on:
+  push:
+    branches: [ main ]  # اجرا در هر push به شاخه main
+  pull_request:
+    branches: [ main ]  # اجرا در هر PR به شاخه main
+
+# تعریف Jobs
+jobs:
+  # Job اصلی برای Build و تست
+  build-and-test:
+    runs-on: ubuntu-latest  # استفاده از محیط اوبونتو (قابل تغییر به windows-latest)
+    
+    steps:
+    # 1. دریافت کد از Repository
+    - name: Checkout code
+      uses: actions/checkout@v4  # اکشن رسمی گیت‌هاب برای کلون کردن کد
+
+    # 2. نصب .NET SDK
+    - name: Setup .NET 8 SDK
+      uses: actions/setup-dotnet@v3  # اکشن رسمی برای نصب دات‌نت
+      with:
+        dotnet-version: '8.0.x'  # نسخه مورد نیاز (قابل تنظیم برای 6.0.x یا 7.0.x)
+
+    # 3. Restore پکیج‌های NuGet
+    - name: Restore dependencies
+      run: dotnet restore YourSolution.sln  # جایگزینی با نام Solution واقعی شما
+      # مثال: dotnet restore src/MyApp.sln
+
+    # 4. Build پروژه با تنظیمات Release
+    - name: Build project
+      run: dotnet build YourSolution.sln --configuration Release --no-restore
+      #dotnet build --configuration Release --output ./artifacts  برای تغییر مسیر خروجی
+      # --no-restore چون قبلاً restore انجام شده
+      #-configuration Release کامپیایل کردن پروژه در حالت پروداکشن
+      #هدف: مطمئن شدن از عدم وجود خطای کامپایل.
+      #run: dotnet publish ./src/MyApp/MyApp.csproj --configuration Release --output ./publish
+
+    # 5. اجرای تست‌های واحد
+    - name: Run unit tests
+      run: dotnet test YourSolution.sln --no-restore --verbosity normal
+      # --verbosity normal برای لاگ‌های شفاف در کنسول
+
+  # Job مستقل برای Deploy (وابسته به موفقیت Job قبلی)
+  deploy-to-azure:
+    needs: build-and-test  # این Job فقط اگر Job قبلی موفق شود اجرا می‌شود
+    runs-on: ubuntu-latest
+    
+    # تنظیم متغیرهای محیطی (اختیاری)
+    env:
+      AZURE_WEBAPP_NAME: 'your-azure-app-name'  # نام Azure Web App شما
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 8 SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    # 6. Publish پروژه برای استقرار
+    - name: Publish application
+      run: dotnet publish ./src/YourProject/YourProject.csproj --configuration Release --output ./publish
+      # مسیر csproj باید مطابق ساختار پروژه شما باشد
+
+    # 7. استقرار در Azure Web App
+    - name: Deploy to Azure
+      uses: azure/webapps-deploy@v2  # اکشن رسمی Azure
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}  # استفاده از متغیر محیطی
+        publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}  # مخفی‌سازی در Secrets
+        package: ./publish  # مسیر فایل‌های منتشر شده
+
+
+
+
+-----------------------------------------------------------------------------------------
+ run: dotnet test YourSolution.sln --no-restore --verbosity normal  
+ 
+
+--verbosity normal   #یعنی خروجی‌ها خوانا و شامل نتایج تست‌ها خواهند بود
+کاربرد: سطح جزئیات خروجی (لاگ) دستور را تعیین می‌کند.
+quiet: حداقل خروجی (فقط خطاها).
+minimal: خروجی مختصر (مانند تعداد تست‌های موفق/ناموفق).
+normal: خروجی استاندارد (شامل نام تست‌ها، نتایج، و خلاصه نهایی).
+detailed: جزئیات بیشتری از فرآیند بیلد و تست.
+diagnostic: جزئیات کامل (برای عیب‌یابی پیشرفته).
+
+
+
+
+در این دستور: سطح normal انتخاب شده است، یعنی خروجی‌ها خوانا و شامل نتایج تست‌ها خواهند بود، اما اطلاعات بیش از حدی (مثل لاگ‌های بیلد) نمایش داده نمی‌شود.
+
+-----------------------------------------------------------------------------------------
+
+name: FamilyFileAppCICD
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-and-test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code 
+      uses: actions/checkout@v4  #دریافت کد از Repository
+
+    - name: Setup .NET 8 SDK
+      uses: actions/setup-dotnet@v4  # اکشن رسمی برای نصب دات‌نت
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore FamilyFile.sln
+
+    - name: Build project
+      run: dotnet build FamilyFile.sln --configuration Release --no-restore
+      
+    - name: Run unit tests  
+      run: dotnet test FamilyFile.sln --no-restore --verbosity normal

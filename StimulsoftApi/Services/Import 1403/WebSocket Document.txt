@@ -1,0 +1,320 @@
+۱. فعال‌سازی WebSocket در ASP.NET Core
+
+در Program.cs:
+
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.UseWebSockets();   // فعال‌سازی WebSocket
+
+app.Map("/ws", async (HttpContext context) =>
+{
+    if (context.WebSockets.IsWebSocketRequest)
+    {
+        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+        await HandleWebSocketConnection(context, webSocket);
+    }
+    else
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+    }
+});
+
+app.Run();
+
+
+--------------------------------------------------------------------------
+
+۲. مدیریت اتصال WebSocket (دریافت و ارسال پیام)
+
+
+متدی که WebSocket را مدیریت می‌کند:
+
+
+private async Task HandleWebSocketConnection(HttpContext context, WebSocket webSocket)
+{
+    var buffer = new byte[1024 * 4];
+
+    while (webSocket.State == WebSocketState.Open)
+    {
+        var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+        if (result.MessageType == WebSocketMessageType.Close)
+        {
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
+            break;
+        }
+        else
+        {
+            var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
+
+            var response = Encoding.UTF8.GetBytes($"Server: {message}");
+
+            await webSocket.SendAsync(
+                new ArraySegment<byte>(response),
+                WebSocketMessageType.Text,
+                true,
+                CancellationToken.None
+            );
+        }
+    }
+}
+
+
+-------------------------------------------------------------------------------------
+
+🟩 ۳. دستورات مهم WebSocket در ASP.NET Core
+
+✔ ۱. AcceptWebSocketAsync()  درخواست WebSocket را قبول می‌کند
+
+var ws = await context.WebSockets.AcceptWebSocketAsync();
+
+
+۲. ReceiveAsync()
+
+پیام‌ دریافت می‌کند:
+
+var result = await ws.ReceiveAsync(buffer, CancellationToken.None);
+
+
+✔ ۳. SendAsync()
+
+
+پیام ارسال می‌کند:
+
+await ws.SendAsync(
+    new ArraySegment<byte>(data),
+    WebSocketMessageType.Text,
+    true,
+    CancellationToken.None
+);
+
+
+
+
+پارامترها:
+
+پارامتر	توضیح
+داده	بایت‌هایی که باید ارسال شوند
+نوع پیام	Text یا Binary
+EndOfMessage	آیا پیام آخر قطعه است؟
+CancellationToken	کنترل لغو
+
+
+
+
+✔ ۴. CloseAsync()
+
+بستن اتصال به‌صورت استاندارد
+
+
+await ws.CloseAsync(
+    WebSocketCloseStatus.NormalClosure,
+    "Closing",
+    CancellationToken.None
+);
+
+
+۵. ویژگی‌ها و وضعیت اتصال
+
+ws.State
+
+
+
+مقدارهایی مانند:
+
+Open
+
+Closed
+
+Aborted
+
+CloseSent
+
+CloseReceived
+
+
+
+
+🟧 ۴. نگهداری Connection ها مانند SignalR
+
+
+public static ConcurrentDictionary<string, WebSocket> Sockets =
+    new ConcurrentDictionary<string, WebSocket>();
+
+
+هنگام اتصال
+
+
+var id = Guid.NewGuid().ToString();
+Sockets.TryAdd(id, webSocket);
+
+
+ارسال پیام به همه:
+
+foreach (var socket in Sockets.Values)
+{
+    await socket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+}
+
+
+
+🟧 ۵. کلاینت جاوااسکریپت برای WebSocket خام
+
+const ws = new WebSocket("wss://localhost:5001/ws");
+
+ws.onopen = () => {
+    ws.send("Hello server!");
+};
+
+ws.onmessage = (msg) => {
+    console.log("Server says: ", msg.data);
+};
+
+
+
+*******************************************************************************************************
+در صورتیکه بخواهیم با دو تا پروژه نوع 
+asp core websocket
+داشته باشیم
+
+-------------------
+پروژه اول سمت سرور
+فعال‌سازی WebSocket
+
+
+
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+app.UseWebSockets();
+
+app.Map("/ws", async (HttpContext context) =>
+{
+    if (context.WebSockets.IsWebSocketRequest)
+    {
+        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
+        await HandleServerSocket(context, webSocket);
+    }
+    else
+    {
+        context.Response.StatusCode = 400;
+    }
+});
+
+app.Run();
+
+-------------------------------
+مدیریت WebSocket Server
+
+
+public static async Task HandleServerSocket(HttpContext context, WebSocket socket)
+{
+    var buffer = new byte[1024 * 4];
+
+    while (socket.State == WebSocketState.Open)
+    {
+        var res = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+        if (res.MessageType == WebSocketMessageType.Close)
+        {
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
+            break;
+        }
+        else
+        {
+            var msg = Encoding.UTF8.GetString(buffer, 0, res.Count);
+            Console.WriteLine($"Message from Client: {msg}");
+
+            // پاسخ
+            var serverMsg = Encoding.UTF8.GetBytes($"Server received: {msg}");
+            await socket.SendAsync(serverMsg, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+    }
+}
+
+------------------------------------------------------بخش دوم
+سمت کلاینت
+
+این پروژه خودش یک WebSocket Client است که به API A وصل می‌شود.
+
+
+using System.Net.WebSockets;
+
+public class WebSocketClientService
+{
+    private ClientWebSocket _client;
+
+    public async Task ConnectAsync()
+    {
+        _client = new ClientWebSocket();
+        await _client.ConnectAsync(new Uri("ws://localhost:5000/ws"), CancellationToken.None);
+        Console.WriteLine("Connected to WebSocket Server");
+
+        _ = ReceiveMessages();  // گوش دادن دائمی
+    }
+
+    public async Task SendAsync(string message)
+    {
+        var bytes = Encoding.UTF8.GetBytes(message);
+        await _client.SendAsync(bytes, WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    private async Task ReceiveMessages()
+    {
+        var buffer = new byte[1024 * 4];
+        while (_client.State == WebSocketState.Open)
+        {
+            var result = await _client.ReceiveAsync(buffer, CancellationToken.None);
+            var msg = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            Console.WriteLine("Server says: " + msg);
+        }
+    }
+}
+
+
+
+
+builder.Services.AddSingleton<WebSocketClientService>();
+var app = builder.Build();
+
+var wsClient = app.Services.GetRequiredService<WebSocketClientService>();
+await wsClient.ConnectAsync();
+
+
+
+3️⃣ ارسال پیام از طریق Controller
+
+[ApiController]
+[Route("api/send")]
+public class SendController : ControllerBase
+{
+    private readonly WebSocketClientService _ws;
+
+    public SendController(WebSocketClientService ws)
+    {
+        _ws = ws;
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SendMessage([FromBody] string msg)
+    {
+        await _ws.SendAsync(msg);
+        return Ok("Sent");
+    }
+}
+
+-----------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+

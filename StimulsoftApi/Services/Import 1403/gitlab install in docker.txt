@@ -80,5 +80,29 @@ services:
       - ./logs:/var/log/gitlab
       - ./data:/var/opt/gitlab
 
+----------------------------------------------------
+
+
+اگر رمز root را گم کرده‌اید، می‌توانید از داخل کانتینر آن را ریست کنید:
+
+docker exec -it gitlab bash
+
+
+gitlab-rails console
+
+
+user = User.where(id: 1).first
+user.password = 'NewStrongPassword123'
+user.password_confirmation = 'NewStrongPassword123'
+user.save!
+
+
+ 
+exit
+
+---------------------------------------------------------
+
+docker exec -it gitlab gitlab-rake "gitlab:password:reset[root]"
+
 
 
