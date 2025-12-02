@@ -1,0 +1,375 @@
+*************************************************************************************************************
+کلیک کردن روی یک دکمه
+
+//جی کوئری
+<button id="myButton">Click me</button>
+<script>
+  $("#myButton").click(function(e) {
+    
+    console.log("کلیک شد روی:", e.target);             // element که کلیک شد
+    console.log("id آن:", $(e.target).attr("id"));    // مثلاً id آن عنصر
+  });
+
+-------------------------------------------------------------------------------------------------------------
+//جاوا اسکریپت
+
+<button id="myButton">Click me</button>
+
+<script>
+  const btn = document.getElementById("myButton");
+  btn.addEventListener("click", function(event) {
+    console.log("کلیک شد روی:", event.target);
+    console.log("id آن:", event.target.id);
+  });
+</script>
+
+-------------------------------------------------------------------------------------------------------------
+انگولار
+
+<button (click)="onClick($event)">Click me</button>
+onClick(event: MouseEvent) {
+  console.log("کلیک شد روی:", event.target);           // عنصر واقعی
+  console.log("id آن:", (event.target as HTMLElement).id);
+
+}
+
+//برای دسترسی به خاصیت‌  event.target as HTMLElement
+**************************************************************************************************************************************
+خواندن و نوشتن در المنت
+
+
+//جی کوئری
+<input type="text" id="myInput" />
+<script>
+  // نوشتن مقدار
+  $("#myInput").val("Hello world");
+
+  // خواندن مقدار
+  const value = $("#myInput").val();
+  console.log(value);
+</script>
+
+----------------------------------------------------------------------------------------------------------------
+//جاواسکریپت
+
+<input type="text" id="myInput" />
+
+<script>
+  const input = document.getElementById("myInput");
+
+  // نوشتن مقدار
+  input.value = "Hello world";
+
+  // خواندن مقدار
+  const value = input.value;
+  console.log(value);
+</script>
+
+----------------------------------------------------------------------------------------------------------------
+
+انگولار
+
+<input [(ngModel)]="myValue" />
+
+<p>مقدار فعلی: {{ myValue }}</p>
+<button (click)="setValue()">تنظیم مقدار</button>
+
+export class MyComponent {
+  myValue: string = '';
+
+  setValue() {
+    this.myValue = 'Hello from Angular';
+  }
+
+  readValue() {
+    console.log(this.myValue);
+  }
+}
+
+*****************************************************************************************************************************
+ پیدا کردن یک المنت
+
+//جی کوئری
+<div id="myElement">Hello</div>
+<script>
+  const $el = $("#myElement");   // این المنت را برمی‌گرداند (jQuery‑object)
+  console.log($el);              // می‌توانی با آن کار کنی
+  console.log($el.text());       // مثلاً متن داخل آن را بگیری
+</script>
+
+
+-----------------------------------------------------------------------------------------
+//جاوااسکریپت
+<div id="myElement">Hello</div>
+
+<script>
+  const el = document.getElementById("myElement");   // این المنت DOM واقعی را برمی‌گرداند
+  console.log(el);
+  console.log(el.innerText);                         // مثلاً خواندن متن داخل آن
+</script>
+
+
+--------------------------------------------------------------------------------------------
+انگولار
+
+<div #myDiv>سلام</div>
+
+import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+
+@Component({...})
+export class MyComponent implements AfterViewInit {
+  @ViewChild('myDiv') myDiv!: ElementRef;//!: من مطمئنم که در زمان اجرا مقداردهی می‌شود
+
+  ngAfterViewInit() {
+    console.log(this.myDiv.nativeElement);  // المنت واقعی
+    console.log(this.myDiv.nativeElement.innerText);
+  }
+}
+
+برای دسترسی به dom از موارد زیر استفاده میکنیم
+
+ElementRef
+nativeElement
+
+
+
+
+<input #myInput type="text" />
+
+import { Component, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+
+@Component({ ... })
+export class MyComponent implements AfterViewInit {
+  @ViewChild('myInput') myInput!: ElementRef<HTMLInputElement>;
+
+  ngAfterViewInit() {
+    // حالا می‌توانی به nativeElement (که همان input واقعی است) دسترسی داشته باشی:
+    console.log(this.myInput.nativeElement.value);
+    this.myInput.nativeElement.value = 'Hello Angular';
+  }
+}
+
+
+
+****************************************************************************************************************************************
+برای اضافه کردن اتربیوت ها
+
+
+<div #myDiv>محتوای من</div>
+
+<button (click)="toggleFoo()">تغییر data‑foo</button>
+
+import { Component, ViewChild, ElementRef } from '@angular/core';
+
+@Component({...})
+export class MyComponent {
+  @ViewChild('myDiv') myDiv!: ElementRef<HTMLElement>;
+  fooValue = 'ali';
+  hasFoo = false;
+
+  toggleFoo() {
+    const el = this.myDiv.nativeElement;
+    if (this.hasFoo) {
+      el.removeAttribute('data-foo');
+      this.hasFoo = false;
+    } else {
+      el.setAttribute('data-foo', this.fooValue);
+      el.getAttribute('data-foo');
+      this.hasFoo = true;
+    }
+  }
+}
+ 
+
+//*******************************************************************************************************************
+
+چگونه میتوان براساس یک اتربیوت تمام المنت های که آن را دارند را لیست کنیم
+
+//جی کوئری
+const elems = $("#mydiv").find('[data-foo]');
+
+
+//جاوااسکریپت
+const elems = document.querySelectorAll('[data-foo]');
+
+
+**************************************************************************************************************************
+ساخت المنت‌ها به‌صورت پویا
+
+import { Component, ViewChild, ElementRef, Renderer2, AfterViewInit } from '@angular/core';
+
+@Component({
+  selector: 'my-component',
+  template: `<div #container></div>`
+})
+export class MyComponent implements AfterViewInit {
+  @ViewChild('container', { static: true }) container!: ElementRef;
+
+  constructor(private renderer: Renderer2) {}
+
+  ngAfterViewInit() {
+    const span = this.renderer.createElement('span');
+    this.renderer.setProperty(span, 'innerText', 'name');
+    
+    const input = this.renderer.createElement('input');
+    this.renderer.setAttribute(input, 'type', 'text');
+    this.renderer.setAttribute(input, 'id', 'txtname');
+
+    const btn = this.renderer.createElement('input');
+    this.renderer.setAttribute(btn, 'type', 'button');
+    this.renderer.setAttribute(btn, 'value', 'save');
+
+    this.renderer.appendChild(this.container.nativeElement, span);
+    this.renderer.appendChild(this.container.nativeElement, input);
+    this.renderer.appendChild(this.container.nativeElement, btn);
+
+    this.renderer.listen(btn, 'click', () => {
+      console.log((input as HTMLInputElement).value);
+    });
+  }
+}
+
+ 
+//************************************************************************************************************************
+افزودن کلاس یا حذف کلاس 
+
+جی کوئری
+
+$('#myElement').addClass('highlight');
+$('#myElement').removeClass('highlight');
+
+$('#myElement').toggleClass('highlight'); // اگر بود حذف می‌کند، اگر نبود اضافه می‌کند
+
+if ($('#myElement').hasClass('highlight')) // بررسی وجود کلاس
+{
+    // کاری انجام بده
+}
+
+--------------------------------------------------------------------------------------------
+جاوااسکریپت
+
+const element = document.getElementById('myElement');
+element.classList.add('highlight'); //افزودن کلاس
+element.classList.remove('highlight');//حذف کلاس
+element.classList.toggle('highlight');//تغییر وضعیت کلاس
+
+if (element.classList.contains('highlight'))// بررسی وجود کلاس
+{
+    // کاری انجام بده
+}
+
+
+---------------------------------------------------------------------------------------------------
+انگولار
+
+
+<div [ngClass]="{'highlight': isHighlighted, 'error': hasError}">
+  محتوا
+</div>
+
+
+export class MyComponent {
+  isHighlighted = false;
+  hasError = true;
+
+  toggleHighlight() {
+    this.isHighlighted = !this.isHighlighted;
+  }
+}
+
+
+
+
+
+
+
+
+*********************************************************************************************************************
+برای نمایش و پنهان کردن المنت
+
+جی کوئری
+$("#mydiv").show();
+$("#mydiv").hide();
+$("#mydiv").toggle();
+
+
+جاوااسکریپت
+
+document.getElementById("mydiv").style.display = "block";
+document.getElementById("mydiv").style.display = "none";
+
+
+انگولار
+
+<div [hidden]="false" id="mydiv">...</div>  //نمایش
+<div [hidden]="true" id="mydiv">...</div>  //پنهان کردن
+
+isVisible = true;
+toggle() { this.isVisible = !this.isVisible; }
+
+
+
+ریکت نیتیو
+
+const [visible, setVisible] = useState(true);
+
+<div style={{ display: visible ? "block" : "none" }} id="mydiv">
+  محتوا
+</div>
+
+
+************************************************************************************************************************
+
+<div #container>
+  <input #child type="text">
+  <input #child type="text">
+  <input #child type="text">
+</div>
+
+
+import { Component, ViewChildren, QueryList, ElementRef, AfterViewInit } from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html'
+})
+export class AppComponent implements AfterViewInit {
+  
+  @ViewChildren('child') inputs!: QueryList<ElementRef>;
+
+  ngAfterViewInit() {
+    // تمام inputها داخل inputs هستند
+    this.inputs.forEach(input => {
+      console.log(input.nativeElement); // دسترسی به هر المنت
+    });
+  }
+}
+
+
+
+//************************************************************************************************************************
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

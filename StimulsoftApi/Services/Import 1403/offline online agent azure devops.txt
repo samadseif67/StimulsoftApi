@@ -1,0 +1,6 @@
+برای اینکه یک دستور اجرایی را بعنوان یک سرویس بتوانیم ثبت کنیم
+C:\agent\run.cmd    وقتی این دستور را داخل پاورشل اجرا میکنیم اجرا میشود و وقتی از پاورشل خارج میشویم متوقف میشود برای اینکه دیگر این دستور بعنوان سرویس فعال باشد و همیشه کار کند باید یک سرویس شبیه به سرویس پایین تعریف کنیم
+
+
+New-Service -Name "MyAgentService" -BinaryPathName "C:\Windows\System32\cmd.exe /c C:\agent\run.cmd" -DisplayName "Agent Service" -StartupType Automatic
+Start-Service "MyAgentService"
