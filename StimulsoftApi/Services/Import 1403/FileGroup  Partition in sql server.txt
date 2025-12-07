@@ -1,0 +1,228 @@
+alter database dbname   --نام دیتابیس
+add filegroup filegroupname --نام فایل گروپ
+
+
+ALTER DATABASE AdventureWorks2022
+ADD FILEGROUP Test1FG1;
+--------------------------------------------------------------
+اتصال فایل به یک فایل گروپ
+میتوان یک فایل یا چند تا فایل به فایل گروپ اضافه کرد 
+داده‌ها تقریبا هم‌زمان بین فایل‌ها توزیع می‌شوند، به طوری که هردو فایل تقریباً با هم پر می‌شوند (یعنی فایل دوم صرفاً زمانی شروع به پر شدن جدی می‌کند که فایل اول تقریباً مقدار متناسبش پر شده)
+
+ALTER DATABASE AdventureWorks2022
+ADD FILE
+(
+    NAME = test1dat3,
+    FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL13.MSSQLSERVER\MSSQL\DATA\t1dat3.ndf',
+    SIZE = 5MB,--به محض ایجاد فایل حجم آن 5 مکابایت باشد
+    MAXSIZE = 100MB,--مشخص می‌کند که این فایل حداکثر تا چه اندازه می‌تواند بزرگ شود-- اگر مقدار ست نشود محدودیتی ندارد و به اندازه  فضای دیسک می باشد
+    FILEGROWTH = 5MB
+),  
+(  
+    NAME = test1dat4,
+    FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL13.MSSQLSERVER\MSSQL\DATA\t1dat4.ndf',
+    SIZE = 5MB,
+    MAXSIZE = 100MB,
+    FILEGROWTH = 5MB
+)  
+TO FILEGROUP Test1FG1;
+
+
+
+---------------------------------------------------------------------------------------
+CREATE PARTITION FUNCTION myRangePF1 (datetime2(0))
+    AS RANGE RIGHT FOR VALUES ('2022-04-01', '2022-05-01', '2022-06-01') ;
+
+
+
+---------------------------------------------------------------------------------------
+CREATE PARTITION SCHEME myRangePS1
+    AS PARTITION myRangePF1
+    ALL TO ('PRIMARY') ;
+یا
+
+CREATE PARTITION SCHEME myRangePS1
+    AS PARTITION myRangePF1
+      TO (Test1FG1,Test1FG1,Test1FG1,'PRIMARY') ;//باید تعداد آن یکی بیشتر از بالای باشد در اصل آخری تکمیل کننده بعد از اخرین تاریخ بالا باشد
+
+----------------------------------------------------------------------------------------
+
+برای غیر فعال سازی ریلشن ها 
+
+ALTER TABLE ChildTable
+    NOCHECK CONSTRAINT ALL;
+---------------------------------------------------------------------------------------
+
+بعد از غیر فعال سازی کردن محدودیت به روش بالا 
+باید کلیک اصلی جدول را حذف کرد و سپس کد زیر را اجرا کنیم و. سپس دوباره کلیک اصلی را دوباره قرارداد
+
+CREATE UNIQUE CLUSTERED INDEX IX_MyTable_Partition  
+  ON dbo.MyTable (CreatedDate, Id)  
+  WITH (DROP_EXISTING = ON)  
+  ON PS_MyTable_Date (CreatedDate);
+
+---------------------------------------------------------------------------------------
+برای فعال سازی ریلشن ها
+ALTER TABLE ChildTable
+    WITH CHECK CHECK CONSTRAINT ALL;
+ 
+----------------------------------------------------------------------------------------
+
+select * from sys.database_file --مشاهده فایل های یک دیتابیس
+
+
+
+----------------------------------------------------------------------------------------
+برای حذف یک فایل از دیتابیس
+
+ALTER DATABASE AdventureWorks2022
+REMOVE FILE test1dat4;
+
+-------------------------------------------------------------------------------------------------
+برای تغییر اندازه فایل
+
+ALTER DATABASE AdventureWorks2022
+MODIFY FILE
+(NAME = test1dat3,
+SIZE = 200MB);
+
+
+--------------------------------------------------------------------------------------------------
+برای تغییر مسیر فایل
+
+ALTER DATABASE AdventureWorks2022
+MODIFY FILE
+(
+    NAME = Test1dat2,
+    FILENAME = N'c:\t1dat2.ndf'
+);
+
+--------------------------------------------------------------------------------------------------
+برای تعیین یک فایل گروپ بصورت پیش فرض 
+هنگامی که فایل گروپ را مشخص نکین بصورت اتوماتیک اس کیوال از فایل گروپ پیش فرض استفاده میکند
+
+ALTER DATABASE AdventureWorks2022
+MODIFY FILEGROUP Test1FG1 DEFAULT;
+
+
+
+--------------------------------------------------------------------------------------------------
+ وقتی فول بکاپ گرفته میشود تمام فایل ها هم بکاپ گرفته میشود 
+هنگام ریستور کردن اگر مسیری که قبلا فایل گروپ داخل آن بود وجود داشته باشد  دو باره در همان مسیر ریستور می شود
+اما اگر مسیر وجود نداشته باشد در مسیر پیش فرض اس کیو ال ریستور میشود
+
+
+------------------------------------------------------------------------------------------------
+
+اگر می‌خواهید ببینید هر پارتیشن از یک جدول، در کدام فایل‌گروه قرار دارد و چند ردیف دارد
+
+SELECT 
+    s.name AS SchemaName,
+    t.name AS TableName,
+    p.partition_number,
+    fg.name AS FileGroupName,
+    p.rows AS RowCount,
+    prv_left.value AS LowerBoundary,
+    prv_right.value AS UpperBoundary
+FROM sys.partitions p
+JOIN sys.tables t ON p.object_id = t.object_id
+JOIN sys.schemas s ON t.schema_id = s.schema_id
+JOIN sys.indexes i ON p.object_id = i.object_id AND p.index_id = i.index_id
+JOIN sys.allocation_units au ON p.partition_id = au.container_id
+JOIN sys.filegroups fg ON au.data_space_id = fg.data_space_id
+LEFT JOIN sys.partition_schemes ps ON i.data_space_id = ps.data_space_id
+LEFT JOIN sys.partition_functions pf ON ps.function_id = pf.function_id
+LEFT JOIN sys.partition_range_values prv_right 
+    ON ps.function_id = prv_right.function_id 
+    AND p.partition_number = prv_right.boundary_id
+LEFT JOIN sys.partition_range_values prv_left 
+    ON ps.function_id = prv_left.function_id 
+    AND p.partition_number - 1 = prv_left.boundary_id
+WHERE i.index_id <= 1  -- فقط heap/clustered
+  AND t.name = 'Orders'  -- اختیاری: فیلتر بر اساس جدول
+ORDER BY t.name, p.partition_number;
+
+
+------------------------------------------------------------------------------------------------
+
+بررسی فایل‌گروه‌های استفاده‌شده توسط یک جدول خاص
+
+اگر فقط یک جدول را می‌خواهید بررسی کنید
+
+
+SELECT DISTINCT
+    ds.name AS DataSpaceName,
+    ds.type_desc AS DataSpaceType,
+    CASE 
+        WHEN ds.type = 'PS' THEN 'Partitioned'
+        ELSE 'Non-Partitioned (Filegroup: ' + ds.name + ')'
+    END AS StorageType
+FROM sys.tables t
+JOIN sys.indexes i ON t.object_id = i.object_id AND i.index_id <= 1
+JOIN sys.data_spaces ds ON i.data_space_id = ds.data_space_id
+WHERE t.name = 'Orders';
+
+----------------------------------------------------------------------------------------------------
+فهرست تمام Filegroupها + جداول/ایندکس‌های استفاده‌کننده از آنها 
+
+SELECT 
+    fg.name AS FileGroupName,
+    ds.type_desc AS DataSpaceType,
+    s.name AS SchemaName,
+    t.name AS TableName,
+    i.name AS IndexName,
+    i.type_desc AS IndexType
+FROM sys.filegroups fg
+JOIN sys.data_spaces ds ON fg.data_space_id = ds.data_space_id
+LEFT JOIN sys.indexes i ON ds.data_space_id = i.data_space_id
+LEFT JOIN sys.tables t ON i.object_id = t.object_id
+LEFT JOIN sys.schemas s ON t.schema_id = s.schema_id
+ORDER BY fg.name, s.name, t.name;
+
+
+-------------------------------------------------------------------------------------------------------------
+برای اینکه متوجه شویم که جدول در داخل کدام فایل گروپ ایجاد شده است
+
+ 
+DECLARE @TableName NVARCHAR(128) = N'Sales';
+
+SELECT 
+    t.name AS TableName,
+    s.name AS SchemaName,
+    ds.name AS DataSpaceName,
+    ds.type_desc AS DataSpaceType,
+    CASE ds.type
+        WHEN 'PS' THEN 'Partition Scheme: ' + ds.name
+        WHEN 'FG' THEN 'Filegroup: ' + ds.name
+        ELSE ds.type_desc
+    END AS Location
+FROM sys.tables t
+JOIN sys.schemas s ON t.schema_id = s.schema_id
+JOIN sys.indexes i ON t.object_id = i.object_id
+JOIN sys.data_spaces ds ON i.data_space_id = ds.data_space_id
+WHERE t.name = @TableName
+  AND i.index_id IN (0, 1);
+
+
+
+---------------------------------------------------------------------------------------------------------------
+
+تشخیص اینکه جدول مورد نظر پارتیشن بندی شده است
+
+
+SELECT 
+    p.partition_number,
+    fg.name AS FileGroupName,
+    p.rows
+FROM sys.partitions p
+JOIN sys.allocation_units au ON p.partition_id = au.container_id
+JOIN sys.filegroups fg ON au.data_space_id = fg.data_space_id
+WHERE p.object_id = OBJECT_ID('dbo.MyTable')
+  AND p.index_id = 1
+ORDER BY p.partition_number;
+
+
+
+
+
+

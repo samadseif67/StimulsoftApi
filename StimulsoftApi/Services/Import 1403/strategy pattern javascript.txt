@@ -1,0 +1,56 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+</body>
+
+</html>
+<script>
+
+
+    function PaymentMellt() {
+        this.Pay = (amount) => {
+            console.log(`amount is ${amount} by Mellat`);
+        }
+    }
+
+    function PaymentSaman() {
+
+        this.Pay = (amount) => {
+            console.log(`amount is ${amount} by saman`);
+        }
+    }
+
+
+    function PaymentSaderat() {
+        this.Pay = (amount) => {
+            console.log(`amount is ${amount} is saderat`);
+        }
+    }
+
+
+    function PaymentStertegy() {
+
+        this.Pay = (type, amount) => {
+            switch (type) {
+                case 'Mellat': return new PaymentMellt().Pay(amount); break;
+                case 'Saman': return new PaymentSaman().Pay(amount); break;
+                case 'Saderat': return new PaymentSaderat().Pay(amount); break;
+            }
+        }
+    }
+
+
+    var paymentStertegy=new PaymentStertegy();
+    paymentStertegy.Pay('Mellat',3000);
+    paymentStertegy.Pay("Saderat",4500);
+
+ 
+
+</script>

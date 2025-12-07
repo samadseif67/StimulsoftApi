@@ -19,7 +19,7 @@ Pool Configuration
 
 
 
-pool: 'Local PC'
+pool: 'Local PC'   //در این قسمت نام agentpool را وارد میکنیم 
 
 
 ------------------------------------------------------------------------------------------------------------------
@@ -28,10 +28,17 @@ trigger:
 - main   #هر وقت روی برنچ مورد نظر پوش انجام این پاپ لاین اجرا شود
 
 pool:
+  name:'Test1'
   vmImage: 'ubuntu-latest'
 
 variables:
   buildConfiguration: 'Release'
+  siteName: 'MyWebsite'
+  appPoolName: 'MyAppPool'
+  physicalPath: 'C:\inetpub\wwwroot\MyWebsite'
+  port: 8041
+  artifactName: 'drop'
+
 
 steps:
 
@@ -66,3 +73,58 @@ steps:
   inputs:
     pathToPublish: '$(Build.ArtifactStagingDirectory)'
     artifactName: 'drop'
+
+
+
+ # ====================
+# 6) انتشار روی IIS
+# ====================
+- task: PowerShellOnTargetMachines@3
+  displayName: 'Create AppPool if not exists'
+  inputs:
+    Machines: '*'  # تمام سرورها در Deployment Group
+    ScriptType: 'InlineScript'
+    InlineScript: |
+      $appPoolName = "$(appPoolName)"
+      if (-not (Get-WebAppPoolState -Name $appPoolName -ErrorAction SilentlyContinue)) {
+          Write-Host "Creating AppPool $appPoolName"
+          New-WebAppPool -Name $appPoolName
+      }
+
+- task: PowerShellOnTargetMachines@3
+  displayName: 'Create IIS Site if not exists'
+  inputs:
+    Machines: '*'
+    ScriptType: 'InlineScript'
+    InlineScript: |
+      $siteName = "$(siteName)"
+      $appPoolName = "$(appPoolName)"
+      $physicalPath = "$(physicalPath)"
+      $port = $(port)
+
+      if (!(Test-Path $physicalPath)) {
+          New-Item -Path $physicalPath -ItemType Directory -Force
+      }
+
+      if (-not (Get-Website -Name $siteName -ErrorAction SilentlyContinue)) {
+          Write-Host "Creating IIS site $siteName"
+          New-Website -Name $siteName -Port $port -PhysicalPath $physicalPath -ApplicationPool $appPoolName
+      }
+
+- task: IISWebAppDeploymentOnMachineGroup@0
+  displayName: 'Deploy Web App Artifact'
+  inputs:
+    WebSiteName: '$(siteName)'
+    Package: '$(Pipeline.Workspace)/$(artifactName)/**/*.zip'
+    TakeAppOfflineFlag: true
+    RemoveAdditionalFilesFlag: true
+
+- task: PowerShellOnTargetMachines@3
+  displayName: 'Restart AppPool'
+  inputs:
+    Machines: '*'
+    ScriptType: 'InlineScript'
+    InlineScript: |
+      $appPoolName = "$(appPoolName)"
+      Restart-WebAppPool -Name $appPoolName
+
